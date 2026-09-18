@@ -62,10 +62,20 @@ final class UnlockBanner: UIView {
     let unlockButton = PillButton(fill: Brand.yellow, title: Brand.ink, size: 15)
 
     private let titleLabel = UILabel()
-    private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+    /// `.systemChromeMaterial` follows light/dark automatically, unlike the
+    /// `...Dark` variants which are pinned.
+    private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
     private let tint = CAGradientLayer()
     private let blurMask = CAGradientLayer()
     private let row = UIView()
+
+    /// Scrim under the bar: darkens in dark mode, lightens in light mode, so
+    /// the blur reads as a blend against either background.
+    private static let scrim = UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor.black.withAlphaComponent(0.80)
+            : UIColor.white.withAlphaComponent(0.82)
+    }
 
     init() {
         super.init(frame: .zero)
@@ -84,13 +94,9 @@ final class UnlockBanner: UIView {
         blurMask.locations = [0, 0.62, 1]
         blur.layer.mask = blurMask
 
-        tint.colors = [
-            UIColor.black.withAlphaComponent(0.82).cgColor,
-            UIColor.black.withAlphaComponent(0.55).cgColor,
-            UIColor.black.withAlphaComponent(0).cgColor,
-        ]
         tint.locations = [0, 0.6, 1]
         layer.insertSublayer(tint, at: 0)
+        applyScrimColors()
 
         // The bar extends under the status bar so nothing scrolls through the
         // gap above it; the title/button row sits in the bottom portion.
@@ -100,7 +106,7 @@ final class UnlockBanner: UIView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Unlock All for Lifetime"
         titleLabel.font = .systemFont(ofSize: 19, weight: .heavy)
-        titleLabel.textColor = .white
+        titleLabel.textColor = .label
         titleLabel.numberOfLines = 2
         titleLabel.adjustsFontSizeToFitWidth = true
         titleLabel.minimumScaleFactor = 0.7
@@ -143,6 +149,29 @@ final class UnlockBanner: UIView {
         CATransaction.setDisableActions(true)
         tint.frame = bounds
         blurMask.frame = blur.bounds
+        CATransaction.commit()
+    }
+
+    /// CAGradientLayer holds raw CGColors, which don't follow trait changes
+    /// the way UIColor does — so resolve them again whenever the style flips.
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previous) {
+            applyScrimColors()
+        }
+    }
+
+    private func applyScrimColors() {
+        let base = Self.scrim.resolvedColor(with: traitCollection)
+        var alpha: CGFloat = 0
+        base.getWhite(nil, alpha: &alpha)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        tint.colors = [
+            base.cgColor,
+            base.withAlphaComponent(alpha * 0.68).cgColor,
+            base.withAlphaComponent(0).cgColor,
+        ]
         CATransaction.commit()
     }
 
