@@ -1,0 +1,41 @@
+{
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : true,
+      "internalID" : "unlockall-001",
+      "localizations" : [
+        {
+          "description" : "Unlock all 103 animated birthday joke stickers. One-time purchase, yours forever.",
+          "displayName" : "Unlock All Stickers",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.ari.hbd3.unlockall",
+      "referenceName" : "Unlock All Stickers",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6813673969",
+    "_developerTeamID" : "FT9JCH726G",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

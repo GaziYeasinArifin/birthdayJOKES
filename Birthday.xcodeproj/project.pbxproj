@@ -10,6 +10,10 @@
 		8D20FC712B9B4E54009C80EC /* Birthday StickerPackExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8D20FC702B9B4E54009C80EC /* Birthday StickerPackExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8D20FC752B9B4E54009C80EC /* Stickers.xcstickers in Resources */ = {isa = PBXBuildFile; fileRef = 8D20FC742B9B4E54009C80EC /* Stickers.xcstickers */; };
 		8D20FC762B9B4E54009C80EC /* Stickers.xcstickers in Resources */ = {isa = PBXBuildFile; fileRef = 8D20FC742B9B4E54009C80EC /* Stickers.xcstickers */; };
+		A1B2C30000000000000003 /* MessagesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000002 /* MessagesViewController.swift */; };
+		A1B2C30000000000000005 /* StickerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000004 /* StickerStore.swift */; };
+		A1B2C30000000000000007 /* StickerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000006 /* StickerCell.swift */; };
+		A1B2C30000000000000009 /* StickerAssets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000008 /* StickerAssets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,12 +44,20 @@
 		8D20FC6C2B9B4E54009C80EC /* Birthday.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Birthday.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D20FC702B9B4E54009C80EC /* Birthday StickerPackExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Birthday StickerPackExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D20FC742B9B4E54009C80EC /* Stickers.xcstickers */ = {isa = PBXFileReference; lastKnownFileType = folder.stickers; name = Stickers.xcstickers; path = "hbd3 StickerPackExtension/Stickers.xcstickers"; sourceTree = "<group>"; };
+		A1B2C30000000000000002 /* MessagesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MessagesViewController.swift; path = "hbd3 StickerPackExtension/MessagesViewController.swift"; sourceTree = "<group>"; };
+		A1B2C30000000000000004 /* StickerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StickerStore.swift; path = "hbd3 StickerPackExtension/StickerStore.swift"; sourceTree = "<group>"; };
+		A1B2C30000000000000006 /* StickerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StickerCell.swift; path = "hbd3 StickerPackExtension/StickerCell.swift"; sourceTree = "<group>"; };
+		A1B2C30000000000000008 /* StickerAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StickerAssets; path = "hbd3 StickerPackExtension/StickerAssets"; sourceTree = "<group>"; };
+		A1B2C3000000000000000B /* Birthday.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Birthday.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		8D20FC652B9B4E54009C80EC = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3000000000000000B /* Birthday.storekit */,
+				A1B2C3000000000000000A /* Source */,
+				A1B2C30000000000000008 /* StickerAssets */,
 				8D20FC742B9B4E54009C80EC /* Stickers.xcstickers */,
 				8D20FC6D2B9B4E54009C80EC /* Products */,
 			);
@@ -58,6 +70,16 @@
 				8D20FC702B9B4E54009C80EC /* Birthday StickerPackExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3000000000000000A /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C30000000000000002 /* MessagesViewController.swift */,
+				A1B2C30000000000000004 /* StickerStore.swift */,
+				A1B2C30000000000000006 /* StickerCell.swift */,
+			);
+			name = Source;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -84,6 +106,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8D20FC792B9B4E54009C80EC /* Build configuration list for PBXNativeTarget "Birthday StickerPackExtension" */;
 			buildPhases = (
+				A1B2C30000000000000001 /* Sources */,
 				8D20FC6E2B9B4E54009C80EC /* Resources */,
 			);
 			buildRules = (
@@ -93,7 +116,7 @@
 			name = "Birthday StickerPackExtension";
 			productName = "hbd3 StickerPackExtension";
 			productReference = 8D20FC702B9B4E54009C80EC /* Birthday StickerPackExtension.appex */;
-			productType = "com.apple.product-type.app-extension.messages-sticker-pack";
+			productType = "com.apple.product-type.app-extension.messages";
 		};
 /* End PBXNativeTarget section */
 
@@ -144,11 +167,25 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C30000000000000009 /* StickerAssets in Resources */,
 				8D20FC752B9B4E54009C80EC /* Stickers.xcstickers in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C30000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C30000000000000003 /* MessagesViewController.swift in Sources */,
+				A1B2C30000000000000005 /* StickerStore.swift in Sources */,
+				A1B2C30000000000000007 /* StickerCell.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		8D20FC732B9B4E54009C80EC /* PBXTargetDependency */ = {
@@ -280,13 +317,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
 				INFOPLIST_KEY_NSStickerSharingLevel = OS;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ari.hbd3.StickerPackExtension;
+				SWIFT_VERSION = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -299,13 +337,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
 				INFOPLIST_KEY_NSStickerSharingLevel = OS;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ari.hbd3.StickerPackExtension;
+				SWIFT_VERSION = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -318,7 +357,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;
@@ -336,7 +375,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;
