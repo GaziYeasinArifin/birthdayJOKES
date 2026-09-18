@@ -1,14 +1,278 @@
 {
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   },
-  "properties" : {
-    "grid-size" : "large"
+  "properties": {
+    "grid-size": "large"
   },
-  "stickers" : [
+  "stickers": [
     {
-      "filename" : "b1.sticker"
+      "filename": "b1.sticker"
+    },
+    {
+      "filename": "b2.sticker"
+    },
+    {
+      "filename": "b3.sticker"
+    },
+    {
+      "filename": "b4.sticker"
+    },
+    {
+      "filename": "b5.sticker"
+    },
+    {
+      "filename": "b6.sticker"
+    },
+    {
+      "filename": "b7.sticker"
+    },
+    {
+      "filename": "b8.sticker"
+    },
+    {
+      "filename": "b9.sticker"
+    },
+    {
+      "filename": "b10.sticker"
+    },
+    {
+      "filename": "b11.sticker"
+    },
+    {
+      "filename": "b12.sticker"
+    },
+    {
+      "filename": "b13.sticker"
+    },
+    {
+      "filename": "b14.sticker"
+    },
+    {
+      "filename": "b15.sticker"
+    },
+    {
+      "filename": "b16.sticker"
+    },
+    {
+      "filename": "b17.sticker"
+    },
+    {
+      "filename": "b18.sticker"
+    },
+    {
+      "filename": "b19.sticker"
+    },
+    {
+      "filename": "b20.sticker"
+    },
+    {
+      "filename": "b21.sticker"
+    },
+    {
+      "filename": "b22.sticker"
+    },
+    {
+      "filename": "b23.sticker"
+    },
+    {
+      "filename": "b24.sticker"
+    },
+    {
+      "filename": "b25.sticker"
+    },
+    {
+      "filename": "b26.sticker"
+    },
+    {
+      "filename": "b27.sticker"
+    },
+    {
+      "filename": "b28.sticker"
+    },
+    {
+      "filename": "b29.sticker"
+    },
+    {
+      "filename": "b30.sticker"
+    },
+    {
+      "filename": "b31.sticker"
+    },
+    {
+      "filename": "b32.sticker"
+    },
+    {
+      "filename": "b33.sticker"
+    },
+    {
+      "filename": "b34.sticker"
+    },
+    {
+      "filename": "b35.sticker"
+    },
+    {
+      "filename": "b36.sticker"
+    },
+    {
+      "filename": "b37.sticker"
+    },
+    {
+      "filename": "b38.sticker"
+    },
+    {
+      "filename": "b39.sticker"
+    },
+    {
+      "filename": "b40.sticker"
+    },
+    {
+      "filename": "b41.sticker"
+    },
+    {
+      "filename": "b42.sticker"
+    },
+    {
+      "filename": "b43.sticker"
+    },
+    {
+      "filename": "b44.sticker"
+    },
+    {
+      "filename": "b45.sticker"
+    },
+    {
+      "filename": "b46.sticker"
+    },
+    {
+      "filename": "b47.sticker"
+    },
+    {
+      "filename": "b48.sticker"
+    },
+    {
+      "filename": "b49.sticker"
+    },
+    {
+      "filename": "b50.sticker"
+    },
+    {
+      "filename": "b51.sticker"
+    },
+    {
+      "filename": "b52.sticker"
+    },
+    {
+      "filename": "b53.sticker"
+    },
+    {
+      "filename": "b54.sticker"
+    },
+    {
+      "filename": "b55.sticker"
+    },
+    {
+      "filename": "b56.sticker"
+    },
+    {
+      "filename": "b57.sticker"
+    },
+    {
+      "filename": "b58.sticker"
+    },
+    {
+      "filename": "b59.sticker"
+    },
+    {
+      "filename": "b60.sticker"
+    },
+    {
+      "filename": "b62.sticker"
+    },
+    {
+      "filename": "b63.sticker"
+    },
+    {
+      "filename": "b64.sticker"
+    },
+    {
+      "filename": "b65.sticker"
+    },
+    {
+      "filename": "b66.sticker"
+    },
+    {
+      "filename": "b67.sticker"
+    },
+    {
+      "filename": "b68.sticker"
+    },
+    {
+      "filename": "b69.sticker"
+    },
+    {
+      "filename": "b70.sticker"
+    },
+    {
+      "filename": "b71.sticker"
+    },
+    {
+      "filename": "b72.sticker"
+    },
+    {
+      "filename": "b74.sticker"
+    },
+    {
+      "filename": "b75.sticker"
+    },
+    {
+      "filename": "b76.sticker"
+    },
+    {
+      "filename": "b77.sticker"
+    },
+    {
+      "filename": "b78.sticker"
+    },
+    {
+      "filename": "b79.sticker"
+    },
+    {
+      "filename": "b80.sticker"
+    },
+    {
+      "filename": "b81.sticker"
+    },
+    {
+      "filename": "b82.sticker"
+    },
+    {
+      "filename": "b85.sticker"
+    },
+    {
+      "filename": "b87.sticker"
+    },
+    {
+      "filename": "b88.sticker"
+    },
+    {
+      "filename": "b94.sticker"
+    },
+    {
+      "filename": "b95.sticker"
+    },
+    {
+      "filename": "b97.sticker"
+    },
+    {
+      "filename": "b99.sticker"
+    },
+    {
+      "filename": "b100.sticker"
+    },
+    {
+      "filename": "b103.sticker"
     }
   ]
 }
