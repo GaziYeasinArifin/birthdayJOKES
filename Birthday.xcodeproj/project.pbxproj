@@ -14,6 +14,7 @@
 		A1B2C30000000000000005 /* StickerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000004 /* StickerStore.swift */; };
 		A1B2C30000000000000007 /* StickerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000006 /* StickerCell.swift */; };
 		A1B2C30000000000000009 /* StickerAssets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000008 /* StickerAssets */; };
+		A1B2C3000000000000000D /* UnlockUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3000000000000000C /* UnlockUI.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		A1B2C30000000000000006 /* StickerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StickerCell.swift; path = "hbd3 StickerPackExtension/StickerCell.swift"; sourceTree = "<group>"; };
 		A1B2C30000000000000008 /* StickerAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StickerAssets; path = "hbd3 StickerPackExtension/StickerAssets"; sourceTree = "<group>"; };
 		A1B2C3000000000000000B /* Birthday.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Birthday.storekit; sourceTree = "<group>"; };
+		A1B2C3000000000000000C /* UnlockUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UnlockUI.swift; path = "hbd3 StickerPackExtension/UnlockUI.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -78,6 +80,7 @@
 				A1B2C30000000000000002 /* MessagesViewController.swift */,
 				A1B2C30000000000000004 /* StickerStore.swift */,
 				A1B2C30000000000000006 /* StickerCell.swift */,
+				A1B2C3000000000000000C /* UnlockUI.swift */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -182,6 +185,7 @@
 				A1B2C30000000000000003 /* MessagesViewController.swift in Sources */,
 				A1B2C30000000000000005 /* StickerStore.swift in Sources */,
 				A1B2C30000000000000007 /* StickerCell.swift in Sources */,
+				A1B2C3000000000000000D /* UnlockUI.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -317,7 +321,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
@@ -337,7 +341,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
@@ -357,7 +361,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;
@@ -375,7 +379,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;

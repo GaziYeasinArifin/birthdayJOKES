@@ -10,58 +10,37 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     private let store = StickerStore()
     private var collectionView: UICollectionView!
-    private let headerBar = UIView()
-    private let unlockButton = UIButton(type: .system)
-    private let restoreButton = UIButton(type: .system)
-    private var headerHeight: NSLayoutConstraint!
-
-    private var observation: NSKeyValueObservation?
+    private let banner = UnlockBanner()
+    private var bannerHeight: NSLayoutConstraint!
+    private weak var paywall: PaywallViewController?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
-        setUpHeader()
+        setUpBanner()
         setUpGrid()
+        store.onChange = { [weak self] in
+            Task { @MainActor in self?.applyState() }
+        }
         store.start()
-        observeStore()
+        applyState()
     }
 
     // MARK: - UI
 
-    private func setUpHeader() {
-        headerBar.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(headerBar)
-
-        unlockButton.translatesAutoresizingMaskIntoConstraints = false
-        unlockButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        unlockButton.titleLabel?.adjustsFontForContentSizeCategory = true
-        unlockButton.backgroundColor = .systemBlue
-        unlockButton.setTitleColor(.white, for: .normal)
-        unlockButton.layer.cornerRadius = 20
-        unlockButton.addTarget(self, action: #selector(unlockTapped), for: .touchUpInside)
-        headerBar.addSubview(unlockButton)
-
-        restoreButton.translatesAutoresizingMaskIntoConstraints = false
-        restoreButton.setTitle("Restore", for: .normal)
-        restoreButton.titleLabel?.font = .systemFont(ofSize: 13)
-        restoreButton.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
-        headerBar.addSubview(restoreButton)
-
-        headerHeight = headerBar.heightAnchor.constraint(equalToConstant: 84)
-
+    private func setUpBanner() {
+        banner.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(banner)
+        banner.unlockButton.addTarget(self, action: #selector(unlockTapped),
+                                      for: .touchUpInside)
+        banner.restoreButton.addTarget(self, action: #selector(restoreTapped),
+                                       for: .touchUpInside)
+        bannerHeight = banner.heightAnchor.constraint(equalToConstant: 112)
         NSLayoutConstraint.activate([
-            headerBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            headerBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            headerBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerHeight,
-
-            unlockButton.topAnchor.constraint(equalTo: headerBar.topAnchor, constant: 8),
-            unlockButton.leadingAnchor.constraint(equalTo: headerBar.leadingAnchor, constant: 16),
-            unlockButton.trailingAnchor.constraint(equalTo: headerBar.trailingAnchor, constant: -16),
-            unlockButton.heightAnchor.constraint(equalToConstant: 40),
-
-            restoreButton.topAnchor.constraint(equalTo: unlockButton.bottomAnchor, constant: 2),
-            restoreButton.centerXAnchor.constraint(equalTo: headerBar.centerXAnchor),
+            banner.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            banner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            banner.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bannerHeight,
         ])
     }
 
@@ -69,7 +48,7 @@ final class MessagesViewController: MSMessagesAppViewController {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 8
         layout.minimumLineSpacing = 8
-        layout.sectionInset = UIEdgeInsets(top: 8, left: 12, bottom: 12, right: 12)
+        layout.sectionInset = UIEdgeInsets(top: 8, left: 12, bottom: 16, right: 12)
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -82,79 +61,94 @@ final class MessagesViewController: MSMessagesAppViewController {
         view.addSubview(collectionView)
 
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: headerBar.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: banner.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
-    /// Re-render whenever the store's displayed state changes.
-    private func observeStore() {
-        store.onChange = { [weak self] in
-            Task { @MainActor in self?.applyState() }
-        }
-        applyState()
-    }
-
     private func applyState() {
-        if store.isUnlocked {
-            headerBar.isHidden = true
-            headerHeight.constant = 0
-        } else {
-            headerBar.isHidden = false
-            headerHeight.constant = 84
-            let title: String
-            if store.isPurchasing {
-                title = "Purchasing…"
-            } else if let price = store.displayPrice {
-                title = "Unlock All \(store.stickerNames.count) Stickers · \(price)"
-            } else {
-                title = "Unlock All \(store.stickerNames.count) Stickers"
-            }
-            unlockButton.setTitle(title, for: .normal)
-            unlockButton.isEnabled = !store.isPurchasing && store.product != nil
-            unlockButton.alpha = unlockButton.isEnabled ? 1 : 0.5
+        let unlocked = store.isUnlocked
+        banner.isHidden = unlocked
+        bannerHeight.constant = unlocked ? 0 : 112
+        if !unlocked {
+            banner.update(total: store.stickerNames.count,
+                          locked: store.lockedCount,
+                          price: store.displayPrice,
+                          purchasing: store.isPurchasing,
+                          enabled: store.product != nil)
         }
         view.layoutIfNeeded()
         collectionView.reloadData()
+
+        // Keep an open paywall in sync, and close it once unlocked.
+        if unlocked, let paywall {
+            paywall.dismiss(animated: true)
+            self.paywall = nil
+        }
     }
 
-    // MARK: - Actions
+    // MARK: - Purchase flow
+
+    /// Tapping a locked sticker opens the paywall.
+    private func presentPaywall() {
+        guard paywall == nil, !store.isUnlocked else { return }
+        // The compact presentation is only as tall as the keyboard; the sheet
+        // needs the expanded style to be usable.
+        if presentationStyle == .compact {
+            requestPresentationStyle(.expanded)
+        }
+        let vc = PaywallViewController(total: store.stickerNames.count,
+                                       locked: store.lockedCount,
+                                       price: store.displayPrice,
+                                       purchasing: store.isPurchasing,
+                                       canBuy: store.product != nil)
+        vc.onBuy = { [weak self] in Task { await self?.runPurchase() } }
+        vc.onRestore = { [weak self] in Task { await self?.runRestore() } }
+        vc.modalPresentationStyle = .formSheet
+        paywall = vc
+        present(vc, animated: true)
+    }
 
     @objc private func unlockTapped() {
-        // The compact presentation is short; expand so the sheet has room.
-        if presentationStyle == .compact { requestPresentationStyle(.expanded) }
-        Task { await runPurchase() }
+        presentPaywall()
+    }
+
+    @objc private func restoreTapped() {
+        Task { await runRestore() }
     }
 
     private func runPurchase() async {
-        switch await store.purchase(in: self) {
+        switch await store.purchase(in: paywall ?? self) {
         case .unlocked:
             applyState()
         case .cancelled:
             break
         case .pending:
-            show(alert: "Waiting for Approval",
-                 message: "Your purchase needs approval before the stickers unlock.")
+            notify("Waiting for Approval",
+                   "Your purchase needs approval before the stickers unlock.")
         case .failed(let message):
-            show(alert: "Purchase Failed", message: message)
+            notify("Purchase Failed", message)
         }
     }
 
-    @objc private func restoreTapped() {
-        Task {
-            let ok = await store.restore()
-            show(alert: ok ? "Restored" : "Nothing to Restore",
-                 message: ok ? "All stickers are unlocked."
-                             : "No previous purchase was found for this Apple Account.")
+    private func runRestore() async {
+        let ok = await store.restore()
+        if ok {
+            applyState()
+        } else {
+            notify("Nothing to Restore",
+                   "No previous purchase was found for this Apple Account.")
         }
     }
 
-    private func show(alert title: String, message: String) {
-        let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    /// Alerts must come from whatever is frontmost, or they never appear.
+    private func notify(_ title: String, _ message: String) {
+        let ac = UIAlertController(title: title, message: message,
+                                   preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+        (presentedViewController ?? self).present(ac, animated: true)
     }
 }
 
@@ -176,7 +170,7 @@ extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDe
         let locked = store.isLocked(index: indexPath.item)
         cell.configure(url: url, name: name, locked: locked)
         if locked {
-            cell.onLockedTap = { [weak self] in self?.unlockTapped() }
+            cell.onLockedTap = { [weak self] in self?.presentPaywall() }
         }
         return cell
     }

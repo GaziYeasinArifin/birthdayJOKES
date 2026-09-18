@@ -3,46 +3,48 @@ import Messages
 
 /// Grid cell for one sticker.
 ///
-/// Unlocked cells host an `MSStickerView`, which is what grants tap-to-insert
-/// and drag-to-transcript. Locked cells deliberately use a plain image view so
-/// there is no path to send them — the gate is structural, not cosmetic. They
-/// also show a static first frame, so only the free stickers animate until the
-/// pack is unlocked.
+/// Both locked and unlocked cells use `MSStickerView` so everything animates.
+/// Locked cells add a transparent touch-catcher above the sticker view: it wins
+/// hit-testing, so `MSStickerView` never receives the tap or the long-press
+/// that starts a drag. The gate stays structural — a locked sticker cannot be
+/// inserted or dragged — while still playing its animation.
 final class StickerCell: UICollectionViewCell {
 
     static let reuseID = "StickerCell"
 
     private let stickerView = MSStickerView()
-    private let lockedImageView = UIImageView()
+    private let touchCatcher = UIControl()
     private let lockBadge = UIImageView()
-    private let lockBackdrop = UIView()
+    private let lockBackdrop = UIVisualEffectView(
+        effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
 
     /// Called when a locked cell is tapped, to surface the paywall.
     var onLockedTap: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.addSubview(stickerView)
-        contentView.addSubview(lockedImageView)
-        contentView.addSubview(lockBackdrop)
-        lockBackdrop.addSubview(lockBadge)
 
         stickerView.translatesAutoresizingMaskIntoConstraints = false
-        lockedImageView.translatesAutoresizingMaskIntoConstraints = false
+        touchCatcher.translatesAutoresizingMaskIntoConstraints = false
         lockBackdrop.translatesAutoresizingMaskIntoConstraints = false
         lockBadge.translatesAutoresizingMaskIntoConstraints = false
 
-        lockedImageView.contentMode = .scaleAspectFit
-        lockedImageView.isUserInteractionEnabled = true
+        contentView.addSubview(stickerView)
+        contentView.addSubview(touchCatcher)
+        contentView.addSubview(lockBackdrop)
+        lockBackdrop.contentView.addSubview(lockBadge)
 
-        let config = UIImage.SymbolConfiguration(pointSize: 11, weight: .bold)
-        lockBadge.image = UIImage(systemName: "lock.fill", withConfiguration: config)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .bold)
+        lockBadge.image = UIImage(systemName: "lock.fill", withConfiguration: cfg)
         lockBadge.tintColor = .white
-        lockBadge.contentMode = .center
 
-        lockBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.45)
-        lockBackdrop.layer.cornerRadius = 11
+        lockBackdrop.layer.cornerRadius = 12
+        lockBackdrop.clipsToBounds = true
         lockBackdrop.isUserInteractionEnabled = false
+        lockBackdrop.layer.borderWidth = 0.5
+        lockBackdrop.layer.borderColor = UIColor.white.withAlphaComponent(0.35).cgColor
+
+        touchCatcher.addTarget(self, action: #selector(lockedTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
             stickerView.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -50,28 +52,32 @@ final class StickerCell: UICollectionViewCell {
             stickerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             stickerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
-            lockedImageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            lockedImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            lockedImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            lockedImageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            touchCatcher.topAnchor.constraint(equalTo: contentView.topAnchor),
+            touchCatcher.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            touchCatcher.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            touchCatcher.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
-            lockBackdrop.widthAnchor.constraint(equalToConstant: 22),
-            lockBackdrop.heightAnchor.constraint(equalToConstant: 22),
-            lockBackdrop.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-            lockBackdrop.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+            lockBackdrop.widthAnchor.constraint(equalToConstant: 24),
+            lockBackdrop.heightAnchor.constraint(equalToConstant: 24),
+            lockBackdrop.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -2),
+            lockBackdrop.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
 
-            lockBadge.centerXAnchor.constraint(equalTo: lockBackdrop.centerXAnchor),
-            lockBadge.centerYAnchor.constraint(equalTo: lockBackdrop.centerYAnchor),
+            lockBadge.centerXAnchor.constraint(equalTo: lockBackdrop.contentView.centerXAnchor),
+            lockBadge.centerYAnchor.constraint(equalTo: lockBackdrop.contentView.centerYAnchor),
         ])
-
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleLockedTap))
-        lockedImageView.addGestureRecognizer(tap)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    @objc private func handleLockedTap() {
+    @objc private func lockedTapped() {
+        // Brief press feedback so the tap clearly registers.
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        UIView.animate(withDuration: 0.09, animations: {
+            self.contentView.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.12) { self.contentView.transform = .identity }
+        })
         onLockedTap?()
     }
 
@@ -79,25 +85,21 @@ final class StickerCell: UICollectionViewCell {
         super.prepareForReuse()
         stickerView.stopAnimating()
         stickerView.sticker = nil
-        lockedImageView.image = nil
+        contentView.transform = .identity
         onLockedTap = nil
     }
 
     func configure(url: URL, name: String, locked: Bool) {
-        if locked {
-            stickerView.isHidden = true
-            lockBackdrop.isHidden = false
-            lockedImageView.isHidden = false
-            // UIImage renders only the first frame of an APNG, which is both
-            // the "still" look we want for locked items and much cheaper.
-            lockedImageView.image = UIImage(contentsOfFile: url.path)
-        } else {
-            lockedImageView.isHidden = true
-            lockBackdrop.isHidden = true
-            stickerView.isHidden = false
-            stickerView.sticker = try? MSSticker(contentsOfFileURL: url,
-                                                 localizedDescription: name)
-            stickerView.startAnimating()
-        }
+        stickerView.sticker = try? MSSticker(contentsOfFileURL: url,
+                                             localizedDescription: name)
+        stickerView.startAnimating()
+
+        touchCatcher.isHidden = !locked
+        touchCatcher.isUserInteractionEnabled = locked
+        lockBackdrop.isHidden = !locked
+
+        isAccessibilityElement = locked
+        accessibilityLabel = locked ? "\(name), locked. Tap to unlock all stickers." : nil
+        accessibilityTraits = locked ? .button : .none
     }
 }
