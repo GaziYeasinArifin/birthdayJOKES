@@ -15,7 +15,7 @@ final class StickerStore {
     static let unlockProductID = "com.ari.hbd3.unlockall"
 
     /// Number of stickers playable without purchasing.
-    static let freeCount = 6
+    static let freeCount = 4
 
     private(set) var stickerNames: [String] = []
     private(set) var product: Product? { didSet { onChange?() } }

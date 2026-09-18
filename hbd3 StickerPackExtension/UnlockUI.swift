@@ -56,13 +56,16 @@ final class PillButton: UIButton {
 /// the left and Restore / Get stacked on the right.
 final class UnlockBanner: UIView {
 
-    let restoreButton = UIButton(type: .system)
+    /// Height of the row holding the title and button, below any safe-area inset.
+    static let rowHeight: CGFloat = 76
+
     let unlockButton = PillButton(fill: Brand.yellow, title: Brand.ink, size: 15)
 
     private let titleLabel = UILabel()
     private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
     private let tint = CAGradientLayer()
     private let blurMask = CAGradientLayer()
+    private let row = UIView()
 
     init() {
         super.init(frame: .zero)
@@ -89,43 +92,44 @@ final class UnlockBanner: UIView {
         tint.locations = [0, 0.6, 1]
         layer.insertSublayer(tint, at: 0)
 
+        // The bar extends under the status bar so nothing scrolls through the
+        // gap above it; the title/button row sits in the bottom portion.
+        row.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(row)
+
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Unlock All for Lifetime"
-        titleLabel.font = .systemFont(ofSize: 20, weight: .heavy)
+        titleLabel.font = .systemFont(ofSize: 19, weight: .heavy)
         titleLabel.textColor = .white
         titleLabel.numberOfLines = 2
         titleLabel.adjustsFontSizeToFitWidth = true
         titleLabel.minimumScaleFactor = 0.7
         titleLabel.adjustsFontForContentSizeCategory = true
-        addSubview(titleLabel)
-
-        restoreButton.translatesAutoresizingMaskIntoConstraints = false
-        restoreButton.setTitle("Restore", for: .normal)
-        restoreButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        restoreButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
-        addSubview(restoreButton)
+        row.addSubview(titleLabel)
 
         unlockButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(unlockButton)
+        row.addSubview(unlockButton)
 
-        // Right column is ~1/3 of the bar; the title takes the rest.
         NSLayoutConstraint.activate([
             blur.topAnchor.constraint(equalTo: topAnchor),
             blur.leadingAnchor.constraint(equalTo: leadingAnchor),
             blur.trailingAnchor.constraint(equalTo: trailingAnchor),
             blur.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -4),
+            row.leadingAnchor.constraint(equalTo: leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: trailingAnchor),
+            row.bottomAnchor.constraint(equalTo: bottomAnchor),
+            row.heightAnchor.constraint(equalToConstant: Self.rowHeight),
+
+            // Title and button share one baseline: both centred in the row.
+            titleLabel.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 18),
+            titleLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: unlockButton.leadingAnchor,
                                                  constant: -12),
 
-            restoreButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
-            restoreButton.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-
-            unlockButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
-            unlockButton.topAnchor.constraint(equalTo: restoreButton.bottomAnchor, constant: 6),
-            unlockButton.heightAnchor.constraint(equalToConstant: 40),
+            unlockButton.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
+            unlockButton.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            unlockButton.heightAnchor.constraint(equalToConstant: 42),
             unlockButton.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.33),
         ])
     }
@@ -151,7 +155,6 @@ final class UnlockBanner: UIView {
             unlockButton.setTitle("Get", for: .normal)
         }
         unlockButton.isEnabled = enabled && !purchasing
-        restoreButton.isEnabled = !purchasing
     }
 }
 
@@ -199,12 +202,14 @@ final class PaywallViewController: UIViewController {
         view.layer.insertSublayer(glow, at: 0)
         self.glowLayer = glow
 
-        // Pill-shaped app icon.
+        // App icon at iMessage geometry: iOS uses a continuous-curve squircle
+        // with a corner radius of ~22.37% of the side.
+        let heroSide: CGFloat = 168
         let hero = UIImageView(image: heroImage)
         hero.translatesAutoresizingMaskIntoConstraints = false
         hero.contentMode = .scaleAspectFill
         hero.clipsToBounds = true
-        hero.layer.cornerRadius = 46
+        hero.layer.cornerRadius = heroSide * 0.2237
         hero.layer.cornerCurve = .continuous
         hero.layer.borderWidth = 1
         hero.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
@@ -284,8 +289,8 @@ final class PaywallViewController: UIViewController {
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
             stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
 
-            hero.widthAnchor.constraint(equalToConstant: 132),
-            hero.heightAnchor.constraint(equalToConstant: 132),
+            hero.widthAnchor.constraint(equalToConstant: heroSide),
+            hero.heightAnchor.constraint(equalToConstant: heroSide),
 
             buyButton.heightAnchor.constraint(equalToConstant: 56),
             buyButton.leadingAnchor.constraint(equalTo: stack.leadingAnchor),

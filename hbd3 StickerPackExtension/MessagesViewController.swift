@@ -33,11 +33,12 @@ final class MessagesViewController: MSMessagesAppViewController {
         view.addSubview(banner)
         banner.unlockButton.addTarget(self, action: #selector(unlockTapped),
                                       for: .touchUpInside)
-        banner.restoreButton.addTarget(self, action: #selector(restoreTapped),
-                                       for: .touchUpInside)
-        bannerHeight = banner.heightAnchor.constraint(equalToConstant: 96)
+        bannerHeight = banner.heightAnchor.constraint(
+            equalToConstant: UnlockBanner.rowHeight)
         NSLayoutConstraint.activate([
-            banner.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            // Pinned to the true top, not the safe area, so nothing scrolls
+            // through the strip above the bar.
+            banner.topAnchor.constraint(equalTo: view.topAnchor),
             banner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             banner.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bannerHeight,
@@ -68,10 +69,16 @@ final class MessagesViewController: MSMessagesAppViewController {
         ])
     }
 
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applyState()
+    }
+
     private func applyState() {
         let unlocked = store.isUnlocked
         banner.isHidden = unlocked
-        bannerHeight.constant = unlocked ? 0 : 96
+        let barHeight = view.safeAreaInsets.top + UnlockBanner.rowHeight
+        bannerHeight.constant = unlocked ? 0 : barHeight
         if !unlocked {
             banner.update(price: store.displayPrice,
                           purchasing: store.isPurchasing,
@@ -79,7 +86,7 @@ final class MessagesViewController: MSMessagesAppViewController {
         }
         // The grid scrolls underneath the translucent bar, so inset it rather
         // than pinning below — that's what makes the blur read as a blend.
-        let top = view.safeAreaInsets.top + (unlocked ? 8 : 96)
+        let top = unlocked ? view.safeAreaInsets.top + 8 : barHeight
         collectionView.contentInset.top = top
         collectionView.verticalScrollIndicatorInsets.top = top
         view.layoutIfNeeded()
@@ -117,10 +124,6 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     @objc private func unlockTapped() {
         presentPaywall()
-    }
-
-    @objc private func restoreTapped() {
-        Task { await runRestore() }
     }
 
     private func runPurchase() async {
