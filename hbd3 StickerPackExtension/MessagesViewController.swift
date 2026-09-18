@@ -13,6 +13,7 @@ final class MessagesViewController: MSMessagesAppViewController {
     private let banner = UnlockBanner()
     private var bannerHeight: NSLayoutConstraint!
     private weak var paywall: PaywallViewController?
+    private var pendingPaywall = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -88,6 +89,10 @@ final class MessagesViewController: MSMessagesAppViewController {
         super.didTransition(to: presentationStyle)
         collectionView.collectionViewLayout.invalidateLayout()
         applyState()
+        if pendingPaywall, presentationStyle == .expanded {
+            pendingPaywall = false
+            showPaywall()
+        }
     }
 
     private func applyState() {
@@ -118,13 +123,22 @@ final class MessagesViewController: MSMessagesAppViewController {
     // MARK: - Purchase flow
 
     /// Tapping a locked sticker opens the paywall.
+    ///
+    /// `requestPresentationStyle` is asynchronous, so presenting straight
+    /// after it renders the sheet into the compact strip. Defer until
+    /// `didTransition(to:)` reports the expanded style.
     private func presentPaywall() {
         guard paywall == nil, !store.isUnlocked else { return }
-        // The compact presentation is only as tall as the keyboard; the sheet
-        // needs the expanded style to be usable.
         if presentationStyle == .compact {
+            pendingPaywall = true
             requestPresentationStyle(.expanded)
+            return
         }
+        showPaywall()
+    }
+
+    private func showPaywall() {
+        guard paywall == nil, !store.isUnlocked else { return }
         let vc = PaywallViewController(total: store.stickerNames.count,
                                        locked: store.lockedCount,
                                        price: store.displayPrice,
@@ -133,7 +147,8 @@ final class MessagesViewController: MSMessagesAppViewController {
                                        heroImage: store.appIconHero())
         vc.onBuy = { [weak self] in Task { await self?.runPurchase() } }
         vc.onRestore = { [weak self] in Task { await self?.runRestore() } }
-        vc.modalPresentationStyle = .formSheet
+        vc.modalPresentationStyle = .overFullScreen
+        vc.modalTransitionStyle = .coverVertical
         paywall = vc
         present(vc, animated: true)
     }

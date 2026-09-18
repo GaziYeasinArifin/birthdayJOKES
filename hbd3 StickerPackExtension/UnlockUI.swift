@@ -244,6 +244,9 @@ final class PaywallViewController: UIViewController {
         // Shadow needs its own view, since the image view clips to its corners.
         let heroShadow = UIView()
         heroShadow.translatesAutoresizingMaskIntoConstraints = false
+        // Needs an opaque fill: a layer shadow is cast by the layer's own
+        // contents, not by its subviews, so a clear wrapper casts nothing.
+        heroShadow.backgroundColor = .systemBackground
         heroShadow.layer.cornerRadius = hero.layer.cornerRadius
         heroShadow.layer.cornerCurve = .continuous
         heroShadow.layer.shadowColor = Brand.purple.cgColor
@@ -321,14 +324,28 @@ final class PaywallViewController: UIViewController {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.alwaysBounceVertical = true
         scroll.showsVerticalScrollIndicator = false
-        scroll.addSubview(stack)
         view.addSubview(scroll)
 
-        let centring = stack.centerYAnchor.constraint(equalTo: scroll.centerYAnchor)
-        centring.priority = .defaultLow   // yields when content is taller
+        // A container pinned to the content guide gives the scroll view an
+        // unambiguous content size; the stack is then centred inside it.
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(container)
+        container.addSubview(stack)
 
-        // Cap the width so the sheet doesn't stretch across an iPad.
-        let maxWidth = stack.widthAnchor.constraint(lessThanOrEqualToConstant: 420)
+        // Prefer filling the visible height (so short content centres), but
+        // grow when the content is taller.
+        let fillHeight = container.heightAnchor.constraint(
+            equalTo: scroll.frameLayoutGuide.heightAnchor)
+        fillHeight.priority = .defaultLow
+
+        let centring = stack.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        centring.priority = .defaultLow
+
+        // Width is min(container - 48, 420): the cap keeps it readable on
+        // iPad, the preferred width lets it reach the cap when there's room.
+        let preferredWidth = stack.widthAnchor.constraint(equalToConstant: 420)
+        preferredWidth.priority = .defaultHigh
 
         NSLayoutConstraint.activate([
             scroll.topAnchor.constraint(equalTo: view.topAnchor),
@@ -336,16 +353,25 @@ final class PaywallViewController: UIViewController {
             scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            stack.topAnchor.constraint(greaterThanOrEqualTo:
-                scroll.contentLayoutGuide.topAnchor, constant: 28),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo:
-                scroll.contentLayoutGuide.bottomAnchor, constant: -28),
-            stack.centerXAnchor.constraint(equalTo: scroll.contentLayoutGuide.centerXAnchor),
-            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor,
-                                         constant: -56),
-            stack.heightAnchor.constraint(equalTo: scroll.contentLayoutGuide.heightAnchor,
-                                          constant: -56),
-            centring, maxWidth,
+            container.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            container.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            // Matching the frame width prevents horizontal scrolling.
+            container.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            container.heightAnchor.constraint(greaterThanOrEqualTo: stack.heightAnchor,
+                                              constant: 48),
+            fillHeight,
+
+            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            stack.topAnchor.constraint(greaterThanOrEqualTo: container.topAnchor,
+                                       constant: 24),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor,
+                                          constant: -24),
+            stack.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor,
+                                         constant: -48),
+            stack.widthAnchor.constraint(lessThanOrEqualToConstant: 420),
+            centring, preferredWidth,
 
             heroShadow.widthAnchor.constraint(equalToConstant: heroW),
             heroShadow.heightAnchor.constraint(equalToConstant: heroH),
