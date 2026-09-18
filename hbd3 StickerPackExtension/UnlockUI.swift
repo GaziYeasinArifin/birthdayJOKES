@@ -3,38 +3,31 @@ import UIKit
 /// Brand palette lifted from the app icon.
 enum Brand {
     static let pink = UIColor(red: 0.91, green: 0.09, blue: 0.44, alpha: 1)
-    static let yellow = UIColor(red: 1.00, green: 0.83, blue: 0.09, alpha: 1)
+    static let yellow = UIColor(red: 1.00, green: 0.82, blue: 0.08, alpha: 1)
     static let blue = UIColor(red: 0.24, green: 0.53, blue: 0.96, alpha: 1)
     static let purple = UIColor(red: 0.58, green: 0.35, blue: 0.94, alpha: 1)
+    static let ink = UIColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1)
 }
 
-/// Rounded gradient button that reads as the primary call to action.
-final class GradientButton: UIButton {
+/// Solid-fill pill button with press feedback.
+final class PillButton: UIButton {
 
-    private let gradient = CAGradientLayer()
+    private let fill: UIColor
 
-    init(colors: [UIColor]) {
+    init(fill: UIColor, title: UIColor, size: CGFloat = 15, weight: UIFont.Weight = .bold) {
+        self.fill = fill
         super.init(frame: .zero)
-        gradient.colors = colors.map(\.cgColor)
-        gradient.startPoint = CGPoint(x: 0, y: 0.5)
-        gradient.endPoint = CGPoint(x: 1, y: 0.5)
-        layer.insertSublayer(gradient, at: 0)
-
-        titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
+        backgroundColor = fill
+        setTitleColor(title, for: .normal)
+        titleLabel?.font = .systemFont(ofSize: size, weight: weight)
         titleLabel?.adjustsFontSizeToFitWidth = true
-        titleLabel?.minimumScaleFactor = 0.8
-        setTitleColor(.white, for: .normal)
-
-        layer.cornerRadius = 24
+        titleLabel?.minimumScaleFactor = 0.75
+        titleLabel?.lineBreakMode = .byClipping
         layer.cornerCurve = .continuous
-        clipsToBounds = true
-
-        // Lift it off the background a little.
-        layer.shadowColor = Brand.pink.cgColor
-        layer.shadowOpacity = 0.35
-        layer.shadowRadius = 10
-        layer.shadowOffset = CGSize(width: 0, height: 4)
-        clipsToBounds = false
+        layer.shadowColor = fill.cgColor
+        layer.shadowOpacity = 0.4
+        layer.shadowRadius = 8
+        layer.shadowOffset = CGSize(width: 0, height: 3)
     }
 
     @available(*, unavailable)
@@ -42,127 +35,150 @@ final class GradientButton: UIButton {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        gradient.frame = bounds
-        gradient.cornerRadius = layer.cornerRadius
+        layer.cornerRadius = min(bounds.height / 2, 22)
     }
 
     override var isHighlighted: Bool {
         didSet {
             UIView.animate(withDuration: 0.12) {
                 self.transform = self.isHighlighted
-                    ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity
-                self.alpha = self.isHighlighted ? 0.92 : 1
+                    ? CGAffineTransform(scaleX: 0.96, y: 0.96) : .identity
             }
         }
     }
+
+    override var isEnabled: Bool {
+        didSet { alpha = isEnabled ? 1 : 0.4 }
+    }
 }
 
-/// Compact banner pinned above the grid.
+/// Top bar: dark blurred gradient that melts into the grid, with the title on
+/// the left and Restore / Get stacked on the right.
 final class UnlockBanner: UIView {
 
-    let unlockButton = GradientButton(colors: [Brand.pink, Brand.purple])
     let restoreButton = UIButton(type: .system)
+    let unlockButton = PillButton(fill: Brand.yellow, title: Brand.ink, size: 15)
+
     private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-    private let card = UIView()
+    private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+    private let tint = CAGradientLayer()
+    private let blurMask = CAGradientLayer()
 
     init() {
         super.init(frame: .zero)
 
-        card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.6)
-        card.layer.cornerRadius = 20
-        card.layer.cornerCurve = .continuous
-        card.layer.borderWidth = 1
-        card.layer.borderColor = UIColor.separator.withAlphaComponent(0.4).cgColor
-        addSubview(card)
+        // Blur fades out toward the bottom so the bar blends into the grid
+        // rather than ending on a hard edge.
+        blur.translatesAutoresizingMaskIntoConstraints = false
+        blur.isUserInteractionEnabled = false
+        addSubview(blur)
+
+        blurMask.colors = [
+            UIColor.white.cgColor,
+            UIColor.white.cgColor,
+            UIColor.white.withAlphaComponent(0).cgColor,
+        ]
+        blurMask.locations = [0, 0.62, 1]
+        blur.layer.mask = blurMask
+
+        tint.colors = [
+            UIColor.black.withAlphaComponent(0.82).cgColor,
+            UIColor.black.withAlphaComponent(0.55).cgColor,
+            UIColor.black.withAlphaComponent(0).cgColor,
+        ]
+        tint.locations = [0, 0.6, 1]
+        layer.insertSublayer(tint, at: 0)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 15, weight: .bold)
-        titleLabel.textColor = .label
+        titleLabel.text = "Unlock All for Lifetime"
+        titleLabel.font = .systemFont(ofSize: 20, weight: .heavy)
+        titleLabel.textColor = .white
+        titleLabel.numberOfLines = 2
+        titleLabel.adjustsFontSizeToFitWidth = true
+        titleLabel.minimumScaleFactor = 0.7
         titleLabel.adjustsFontForContentSizeCategory = true
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.adjustsFontForContentSizeCategory = true
-
-        unlockButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleLabel)
 
         restoreButton.translatesAutoresizingMaskIntoConstraints = false
         restoreButton.setTitle("Restore", for: .normal)
-        restoreButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
-        restoreButton.setTitleColor(.secondaryLabel, for: .normal)
+        restoreButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        restoreButton.setTitleColor(UIColor.white.withAlphaComponent(0.75), for: .normal)
+        addSubview(restoreButton)
 
-        let text = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
-        text.axis = .vertical
-        text.spacing = 1
-        text.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(text)
-        card.addSubview(restoreButton)
-        card.addSubview(unlockButton)
+        unlockButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(unlockButton)
 
+        // Right column is ~1/3 of the bar; the title takes the rest.
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            card.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            card.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            card.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            blur.topAnchor.constraint(equalTo: topAnchor),
+            blur.leadingAnchor.constraint(equalTo: leadingAnchor),
+            blur.trailingAnchor.constraint(equalTo: trailingAnchor),
+            blur.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            text.topAnchor.constraint(equalTo: card.topAnchor, constant: 10),
-            text.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
+            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -4),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: unlockButton.leadingAnchor,
+                                                 constant: -12),
 
-            restoreButton.centerYAnchor.constraint(equalTo: text.centerYAnchor),
-            restoreButton.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
-            restoreButton.leadingAnchor.constraint(greaterThanOrEqualTo: text.trailingAnchor, constant: 8),
+            restoreButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
+            restoreButton.topAnchor.constraint(equalTo: topAnchor, constant: 12),
 
-            unlockButton.topAnchor.constraint(equalTo: text.bottomAnchor, constant: 8),
-            unlockButton.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
-            unlockButton.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
-            unlockButton.heightAnchor.constraint(equalToConstant: 48),
-            unlockButton.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12),
+            unlockButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
+            unlockButton.topAnchor.constraint(equalTo: restoreButton.bottomAnchor, constant: 6),
+            unlockButton.heightAnchor.constraint(equalToConstant: 40),
+            unlockButton.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.33),
         ])
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func update(total: Int, locked: Int, price: String?, purchasing: Bool, enabled: Bool) {
-        titleLabel.text = "Unlock All \(total) Stickers"
-        subtitleLabel.text = "\(locked) locked · One-time purchase"
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        tint.frame = bounds
+        blurMask.frame = blur.bounds
+        CATransaction.commit()
+    }
+
+    func update(price: String?, purchasing: Bool, enabled: Bool) {
         if purchasing {
-            unlockButton.setTitle("Purchasing…", for: .normal)
+            unlockButton.setTitle("…", for: .normal)
         } else if let price {
-            unlockButton.setTitle("Unlock Everything  ·  \(price)", for: .normal)
+            unlockButton.setTitle("Get \(price)", for: .normal)
         } else {
-            unlockButton.setTitle("Unlock Everything", for: .normal)
+            unlockButton.setTitle("Get", for: .normal)
         }
         unlockButton.isEnabled = enabled && !purchasing
-        unlockButton.alpha = unlockButton.isEnabled ? 1 : 0.45
         restoreButton.isEnabled = !purchasing
     }
 }
 
-/// Full paywall presented when a locked sticker is tapped.
+/// Full paywall, presented when a locked sticker or the Get button is tapped.
 final class PaywallViewController: UIViewController {
 
     private let total: Int
     private let locked: Int
-    private var price: String?
+    private let price: String?
     private let purchasing: Bool
     private let canBuy: Bool
+    private let heroImage: UIImage?
 
     var onBuy: (() -> Void)?
     var onRestore: (() -> Void)?
 
-    private let buyButton = GradientButton(colors: [Brand.pink, Brand.purple])
-    private let statusLabel = UILabel()
+    private let buyButton = PillButton(fill: Brand.yellow, title: Brand.ink,
+                                       size: 18, weight: .heavy)
 
-    init(total: Int, locked: Int, price: String?, purchasing: Bool, canBuy: Bool) {
+    init(total: Int, locked: Int, price: String?, purchasing: Bool,
+         canBuy: Bool, heroImage: UIImage?) {
         self.total = total
         self.locked = locked
         self.price = price
         self.purchasing = purchasing
         self.canBuy = canBuy
+        self.heroImage = heroImage
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -171,104 +187,151 @@ final class PaywallViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = Brand.ink
 
-        let hero = UIImageView(image: UIImage(systemName: "sparkles"))
-        hero.tintColor = Brand.yellow
-        hero.contentMode = .scaleAspectFit
-        hero.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
-            pointSize: 44, weight: .bold)
+        // Soft brand glow behind the hero.
+        let glow = CAGradientLayer()
+        glow.type = .radial
+        glow.colors = [Brand.purple.withAlphaComponent(0.55).cgColor,
+                       UIColor.clear.cgColor]
+        glow.startPoint = CGPoint(x: 0.5, y: 0.5)
+        glow.endPoint = CGPoint(x: 1, y: 1)
+        view.layer.insertSublayer(glow, at: 0)
+        self.glowLayer = glow
+
+        // Pill-shaped app icon.
+        let hero = UIImageView(image: heroImage)
+        hero.translatesAutoresizingMaskIntoConstraints = false
+        hero.contentMode = .scaleAspectFill
+        hero.clipsToBounds = true
+        hero.layer.cornerRadius = 46
+        hero.layer.cornerCurve = .continuous
+        hero.layer.borderWidth = 1
+        hero.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
+        hero.layer.shadowColor = Brand.purple.cgColor
+        hero.layer.shadowOpacity = 0.6
+        hero.layer.shadowRadius = 24
+        hero.layer.shadowOffset = CGSize(width: 0, height: 10)
+        hero.layer.masksToBounds = false
 
         let title = UILabel()
-        title.text = "Unlock All \(total) Stickers"
-        title.font = .systemFont(ofSize: 26, weight: .heavy)
+        title.text = "Unlock All for Lifetime"
+        title.font = .systemFont(ofSize: 28, weight: .heavy)
+        title.textColor = .white
         title.textAlignment = .center
         title.numberOfLines = 0
         title.adjustsFontForContentSizeCategory = true
 
         let blurb = UILabel()
-        blurb.text = "\(locked) more animated birthday jokes.\nOne-time purchase — yours forever."
-        blurb.font = .systemFont(ofSize: 15)
-        blurb.textColor = .secondaryLabel
+        blurb.text = "\(locked) more animated birthday jokes,\nunlocked forever."
+        blurb.font = .systemFont(ofSize: 15, weight: .medium)
+        blurb.textColor = UIColor.white.withAlphaComponent(0.65)
         blurb.textAlignment = .center
         blurb.numberOfLines = 0
         blurb.adjustsFontForContentSizeCategory = true
 
         let bullets = UIStackView(arrangedSubviews: [
-            Self.bullet("checkmark.seal.fill", "All \(total) animated stickers"),
-            Self.bullet("infinity", "No subscription, no ads"),
-            Self.bullet("person.2.fill", "Shared with your family"),
+            Self.bullet("sparkles", "All \(total) animated stickers", Brand.yellow),
+            Self.bullet("bolt.heart.fill", "One payment, no subscription", Brand.pink),
+            Self.bullet("person.2.fill", "Shared with your family", Brand.blue),
         ])
         bullets.axis = .vertical
-        bullets.spacing = 10
+        bullets.spacing = 14
 
         buyButton.translatesAutoresizingMaskIntoConstraints = false
         buyButton.setTitle(buyTitle(), for: .normal)
         buyButton.isEnabled = canBuy && !purchasing
-        buyButton.alpha = buyButton.isEnabled ? 1 : 0.45
         buyButton.addTarget(self, action: #selector(buyTapped), for: .touchUpInside)
 
-        statusLabel.text = canBuy ? nil : "The store isn’t reachable right now."
-        statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.textColor = .tertiaryLabel
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
+        let note = UILabel()
+        note.text = canBuy ? "One-time purchase · Restores on all your devices"
+                           : "The store isn’t reachable right now."
+        note.font = .systemFont(ofSize: 11, weight: .medium)
+        note.textColor = UIColor.white.withAlphaComponent(0.4)
+        note.textAlignment = .center
+        note.numberOfLines = 0
 
         let restore = UIButton(type: .system)
         restore.setTitle("Restore Purchase", for: .normal)
         restore.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        restore.setTitleColor(UIColor.white.withAlphaComponent(0.8), for: .normal)
         restore.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
 
         let close = UIButton(type: .system)
         close.setTitle("Not Now", for: .normal)
         close.titleLabel?.font = .systemFont(ofSize: 14)
-        close.setTitleColor(.secondaryLabel, for: .normal)
+        close.setTitleColor(UIColor.white.withAlphaComponent(0.35), for: .normal)
         close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
 
         let stack = UIStackView(arrangedSubviews: [
-            hero, title, blurb, bullets, buyButton, statusLabel, restore, close,
+            hero, title, blurb, bullets, buyButton, note, restore, close,
         ])
         stack.axis = .vertical
-        stack.spacing = 14
+        stack.spacing = 16
         stack.alignment = .fill
-        stack.setCustomSpacing(6, after: hero)
-        stack.setCustomSpacing(18, after: blurb)
-        stack.setCustomSpacing(18, after: bullets)
-        stack.setCustomSpacing(6, after: buyButton)
+        stack.setCustomSpacing(22, after: hero)
+        stack.setCustomSpacing(10, after: title)
+        stack.setCustomSpacing(26, after: blurb)
+        stack.setCustomSpacing(26, after: bullets)
+        stack.setCustomSpacing(8, after: buyButton)
+        stack.setCustomSpacing(18, after: note)
         stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.alignment = .center
         view.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
             stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            buyButton.heightAnchor.constraint(equalToConstant: 52),
-            hero.heightAnchor.constraint(equalToConstant: 50),
+
+            hero.widthAnchor.constraint(equalToConstant: 132),
+            hero.heightAnchor.constraint(equalToConstant: 132),
+
+            buyButton.heightAnchor.constraint(equalToConstant: 56),
+            buyButton.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
+            buyButton.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
+            bullets.leadingAnchor.constraint(equalTo: stack.leadingAnchor, constant: 8),
+            bullets.trailingAnchor.constraint(equalTo: stack.trailingAnchor, constant: -8),
+            title.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            blurb.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            note.widthAnchor.constraint(equalTo: stack.widthAnchor),
         ])
+    }
+
+    private var glowLayer: CAGradientLayer?
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let side = max(view.bounds.width, 460)
+        glowLayer?.frame = CGRect(x: view.bounds.midX - side / 2,
+                                  y: view.bounds.midY - side * 0.85,
+                                  width: side, height: side)
     }
 
     private func buyTitle() -> String {
         if purchasing { return "Purchasing…" }
-        if let price { return "Unlock Everything  ·  \(price)" }
+        if let price { return "Get \(price)" }
         return "Unlock Everything"
     }
 
-    private static func bullet(_ symbol: String, _ text: String) -> UIView {
+    private static func bullet(_ symbol: String, _ text: String,
+                               _ tint: UIColor) -> UIView {
         let icon = UIImageView(image: UIImage(systemName: symbol))
-        icon.tintColor = Brand.blue
+        icon.tintColor = tint
         icon.contentMode = .scaleAspectFit
         icon.setContentHuggingPriority(.required, for: .horizontal)
-        icon.widthAnchor.constraint(equalToConstant: 22).isActive = true
+        icon.widthAnchor.constraint(equalToConstant: 26).isActive = true
 
         let label = UILabel()
         label.text = text
-        label.font = .systemFont(ofSize: 15, weight: .medium)
+        label.font = .systemFont(ofSize: 15, weight: .semibold)
+        label.textColor = UIColor.white.withAlphaComponent(0.9)
         label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
 
         let row = UIStackView(arrangedSubviews: [icon, label])
         row.axis = .horizontal
-        row.spacing = 10
+        row.spacing = 12
         row.alignment = .center
         return row
     }

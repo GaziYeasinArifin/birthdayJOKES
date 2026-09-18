@@ -1,5 +1,6 @@
 import Foundation
 import StoreKit
+import UIKit
 
 /// Catalog of the bundled stickers plus the unlock entitlement.
 ///
@@ -53,6 +54,15 @@ final class StickerStore {
 
     func isLocked(index: Int) -> Bool {
         !isUnlocked && index >= Self.freeCount
+    }
+
+    /// Icon artwork used as the paywall hero.
+    func appIconHero() -> UIImage? {
+        guard let url = Bundle.main.url(forResource: "AppIconHero",
+                                        withExtension: "png",
+                                        subdirectory: Self.assetsFolder)
+        else { return nil }
+        return UIImage(contentsOfFile: url.path)
     }
 
     func url(for name: String) -> URL? {

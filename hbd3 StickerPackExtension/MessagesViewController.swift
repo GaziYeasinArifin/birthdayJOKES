@@ -35,7 +35,7 @@ final class MessagesViewController: MSMessagesAppViewController {
                                       for: .touchUpInside)
         banner.restoreButton.addTarget(self, action: #selector(restoreTapped),
                                        for: .touchUpInside)
-        bannerHeight = banner.heightAnchor.constraint(equalToConstant: 112)
+        bannerHeight = banner.heightAnchor.constraint(equalToConstant: 96)
         NSLayoutConstraint.activate([
             banner.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             banner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -58,10 +58,10 @@ final class MessagesViewController: MSMessagesAppViewController {
         collectionView.delegate = self
         collectionView.register(StickerCell.self,
                                 forCellWithReuseIdentifier: StickerCell.reuseID)
-        view.addSubview(collectionView)
+        view.insertSubview(collectionView, belowSubview: banner)
 
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: banner.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -71,14 +71,17 @@ final class MessagesViewController: MSMessagesAppViewController {
     private func applyState() {
         let unlocked = store.isUnlocked
         banner.isHidden = unlocked
-        bannerHeight.constant = unlocked ? 0 : 112
+        bannerHeight.constant = unlocked ? 0 : 96
         if !unlocked {
-            banner.update(total: store.stickerNames.count,
-                          locked: store.lockedCount,
-                          price: store.displayPrice,
+            banner.update(price: store.displayPrice,
                           purchasing: store.isPurchasing,
                           enabled: store.product != nil)
         }
+        // The grid scrolls underneath the translucent bar, so inset it rather
+        // than pinning below — that's what makes the blur read as a blend.
+        let top = view.safeAreaInsets.top + (unlocked ? 8 : 96)
+        collectionView.contentInset.top = top
+        collectionView.verticalScrollIndicatorInsets.top = top
         view.layoutIfNeeded()
         collectionView.reloadData()
 
@@ -103,7 +106,8 @@ final class MessagesViewController: MSMessagesAppViewController {
                                        locked: store.lockedCount,
                                        price: store.displayPrice,
                                        purchasing: store.isPurchasing,
-                                       canBuy: store.product != nil)
+                                       canBuy: store.product != nil,
+                                       heroImage: store.appIconHero())
         vc.onBuy = { [weak self] in Task { await self?.runPurchase() } }
         vc.onRestore = { [weak self] in Task { await self?.runRestore() } }
         vc.modalPresentationStyle = .formSheet
