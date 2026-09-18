@@ -230,15 +230,17 @@ final class PaywallViewController: UIViewController {
         self.glowLayer = glow
         applyGlowColors()
 
-        // iMessage app icons are 4:3, not square — the artwork here is the
-        // 1024x768 icon, shown at iOS's continuous-curve corner radius.
+        // iMessage app icons are 4:3, not square, and the system masks them
+        // with a corner radius that is large relative to their height — much
+        // rounder than the 22% used for square iOS icons.
         let heroW: CGFloat = 248
-        let heroH: CGFloat = heroW * 3 / 4
+        let heroH: CGFloat = heroW * 3 / 4          // 186
+        let heroRadius = heroH * 0.30               // ~56pt
         let hero = UIImageView(image: heroImage)
         hero.translatesAutoresizingMaskIntoConstraints = false
         hero.contentMode = .scaleAspectFill
         hero.clipsToBounds = true
-        hero.layer.cornerRadius = heroH * 0.2237
+        hero.layer.cornerRadius = heroRadius
         hero.layer.cornerCurve = .continuous
 
         // Shadow needs its own view, since the image view clips to its corners.
@@ -318,60 +320,32 @@ final class PaywallViewController: UIViewController {
         stack.setCustomSpacing(18, after: note)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        // Scrollable so the sheet survives small iPhones, large Dynamic Type
-        // and the short compact presentation without clipping.
-        let scroll = UIScrollView()
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-        scroll.alwaysBounceVertical = true
-        scroll.showsVerticalScrollIndicator = false
-        view.addSubview(scroll)
+        // Fixed, centred layout — no scrolling. Everything is sized to fit the
+        // expanded Messages presentation.
+        view.addSubview(stack)
 
-        // A container pinned to the content guide gives the scroll view an
-        // unambiguous content size; the stack is then centred inside it.
-        let container = UIView()
-        container.translatesAutoresizingMaskIntoConstraints = false
-        scroll.addSubview(container)
-        container.addSubview(stack)
-
-        // Prefer filling the visible height (so short content centres), but
-        // grow when the content is taller.
-        let fillHeight = container.heightAnchor.constraint(
-            equalTo: scroll.frameLayoutGuide.heightAnchor)
-        fillHeight.priority = .defaultLow
-
-        let centring = stack.centerYAnchor.constraint(equalTo: container.centerYAnchor)
-        centring.priority = .defaultLow
-
-        // Width is min(container - 48, 420): the cap keeps it readable on
-        // iPad, the preferred width lets it reach the cap when there's room.
+        // Width is min(view - 48, 420): the cap keeps it readable on iPad,
+        // the preferred width lets it reach the cap when there's room.
         let preferredWidth = stack.widthAnchor.constraint(equalToConstant: 420)
         preferredWidth.priority = .defaultHigh
 
+        // Non-required: on a short presentation these would otherwise fight
+        // the centring constraint and break the layout outright.
+        let topInset = stack.topAnchor.constraint(
+            greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 12)
+        topInset.priority = .defaultHigh
+        let bottomInset = stack.bottomAnchor.constraint(
+            lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12)
+        bottomInset.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: view.topAnchor),
-            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            container.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
-            container.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
-            container.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
-            container.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
-            // Matching the frame width prevents horizontal scrolling.
-            container.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
-            container.heightAnchor.constraint(greaterThanOrEqualTo: stack.heightAnchor,
-                                              constant: 48),
-            fillHeight,
-
-            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            stack.topAnchor.constraint(greaterThanOrEqualTo: container.topAnchor,
-                                       constant: 24),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor,
-                                          constant: -24),
-            stack.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor,
+            stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor,
                                          constant: -48),
             stack.widthAnchor.constraint(lessThanOrEqualToConstant: 420),
-            centring, preferredWidth,
+            topInset, bottomInset,
+            preferredWidth,
 
             heroShadow.widthAnchor.constraint(equalToConstant: heroW),
             heroShadow.heightAnchor.constraint(equalToConstant: heroH),
@@ -432,7 +406,7 @@ final class PaywallViewController: UIViewController {
         let label = UILabel()
         label.text = text
         label.font = .systemFont(ofSize: 15, weight: .semibold)
-        label.textColor = UIColor.white.withAlphaComponent(0.9)
+        label.textColor = .label
         label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
 
