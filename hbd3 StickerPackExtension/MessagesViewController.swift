@@ -74,6 +74,22 @@ final class MessagesViewController: MSMessagesAppViewController {
         applyState()
     }
 
+    /// Rotation and the compact/expanded transition both change the width, so
+    /// the column count has to be recalculated.
+    override func viewWillTransition(to size: CGSize,
+                                     with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: { _ in
+            self.collectionView.collectionViewLayout.invalidateLayout()
+        })
+    }
+
+    override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
+        super.didTransition(to: presentationStyle)
+        collectionView.collectionViewLayout.invalidateLayout()
+        applyState()
+    }
+
     private func applyState() {
         let unlocked = store.isUnlocked
         banner.isHidden = unlocked
@@ -182,12 +198,18 @@ extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDe
         return cell
     }
 
-    /// Two per row, matching the large sticker presentation.
+    /// Two per row on a phone, matching the large sticker presentation; wider
+    /// screens (iPad, landscape) add columns rather than inflating the cells.
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         let insets: CGFloat = 12 * 2
         let gap: CGFloat = 8
-        let width = (collectionView.bounds.width - insets - gap) / 2
+        let available = collectionView.bounds.width - insets
+        guard available > 0 else { return CGSize(width: 1, height: 1) }
+
+        let targetCell: CGFloat = 190
+        let columns = max(2, min(6, Int((available + gap) / (targetCell + gap))))
+        let width = (available - gap * CGFloat(columns - 1)) / CGFloat(columns)
         return CGSize(width: floor(width), height: floor(width))
     }
 }

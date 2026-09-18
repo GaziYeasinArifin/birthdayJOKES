@@ -219,39 +219,43 @@ final class PaywallViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = Brand.ink
+        view.backgroundColor = .systemBackground
 
         // Soft brand glow behind the hero.
         let glow = CAGradientLayer()
         glow.type = .radial
-        glow.colors = [Brand.purple.withAlphaComponent(0.55).cgColor,
-                       UIColor.clear.cgColor]
         glow.startPoint = CGPoint(x: 0.5, y: 0.5)
         glow.endPoint = CGPoint(x: 1, y: 1)
         view.layer.insertSublayer(glow, at: 0)
         self.glowLayer = glow
+        applyGlowColors()
 
-        // App icon at iMessage geometry: iOS uses a continuous-curve squircle
-        // with a corner radius of ~22.37% of the side.
-        let heroSide: CGFloat = 168
+        // iMessage app icons are 4:3, not square — the artwork here is the
+        // 1024x768 icon, shown at iOS's continuous-curve corner radius.
+        let heroW: CGFloat = 248
+        let heroH: CGFloat = heroW * 3 / 4
         let hero = UIImageView(image: heroImage)
         hero.translatesAutoresizingMaskIntoConstraints = false
         hero.contentMode = .scaleAspectFill
         hero.clipsToBounds = true
-        hero.layer.cornerRadius = heroSide * 0.2237
+        hero.layer.cornerRadius = heroH * 0.2237
         hero.layer.cornerCurve = .continuous
-        hero.layer.borderWidth = 1
-        hero.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
-        hero.layer.shadowColor = Brand.purple.cgColor
-        hero.layer.shadowOpacity = 0.6
-        hero.layer.shadowRadius = 24
-        hero.layer.shadowOffset = CGSize(width: 0, height: 10)
-        hero.layer.masksToBounds = false
+
+        // Shadow needs its own view, since the image view clips to its corners.
+        let heroShadow = UIView()
+        heroShadow.translatesAutoresizingMaskIntoConstraints = false
+        heroShadow.layer.cornerRadius = hero.layer.cornerRadius
+        heroShadow.layer.cornerCurve = .continuous
+        heroShadow.layer.shadowColor = Brand.purple.cgColor
+        heroShadow.layer.shadowOpacity = 0.45
+        heroShadow.layer.shadowRadius = 22
+        heroShadow.layer.shadowOffset = CGSize(width: 0, height: 10)
+        heroShadow.addSubview(hero)
 
         let title = UILabel()
         title.text = "Unlock All for Lifetime"
         title.font = .systemFont(ofSize: 28, weight: .heavy)
-        title.textColor = .white
+        title.textColor = .label
         title.textAlignment = .center
         title.numberOfLines = 0
         title.adjustsFontForContentSizeCategory = true
@@ -259,7 +263,7 @@ final class PaywallViewController: UIViewController {
         let blurb = UILabel()
         blurb.text = "\(locked) more animated birthday jokes,\nunlocked forever."
         blurb.font = .systemFont(ofSize: 15, weight: .medium)
-        blurb.textColor = UIColor.white.withAlphaComponent(0.65)
+        blurb.textColor = .secondaryLabel
         blurb.textAlignment = .center
         blurb.numberOfLines = 0
         blurb.adjustsFontForContentSizeCategory = true
@@ -281,45 +285,74 @@ final class PaywallViewController: UIViewController {
         note.text = canBuy ? "One-time purchase · Restores on all your devices"
                            : "The store isn’t reachable right now."
         note.font = .systemFont(ofSize: 11, weight: .medium)
-        note.textColor = UIColor.white.withAlphaComponent(0.4)
+        note.textColor = .tertiaryLabel
         note.textAlignment = .center
         note.numberOfLines = 0
 
         let restore = UIButton(type: .system)
         restore.setTitle("Restore Purchase", for: .normal)
         restore.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
-        restore.setTitleColor(UIColor.white.withAlphaComponent(0.8), for: .normal)
+        restore.setTitleColor(.label, for: .normal)
         restore.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
 
         let close = UIButton(type: .system)
         close.setTitle("Not Now", for: .normal)
         close.titleLabel?.font = .systemFont(ofSize: 14)
-        close.setTitleColor(UIColor.white.withAlphaComponent(0.35), for: .normal)
+        close.setTitleColor(.secondaryLabel, for: .normal)
         close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
 
         let stack = UIStackView(arrangedSubviews: [
-            hero, title, blurb, bullets, buyButton, note, restore, close,
+            heroShadow, title, blurb, bullets, buyButton, note, restore, close,
         ])
         stack.axis = .vertical
         stack.spacing = 16
-        stack.alignment = .fill
-        stack.setCustomSpacing(22, after: hero)
+        stack.alignment = .center
+        stack.setCustomSpacing(22, after: heroShadow)
         stack.setCustomSpacing(10, after: title)
         stack.setCustomSpacing(26, after: blurb)
         stack.setCustomSpacing(26, after: bullets)
         stack.setCustomSpacing(8, after: buyButton)
         stack.setCustomSpacing(18, after: note)
         stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.alignment = .center
-        view.addSubview(stack)
+
+        // Scrollable so the sheet survives small iPhones, large Dynamic Type
+        // and the short compact presentation without clipping.
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.alwaysBounceVertical = true
+        scroll.showsVerticalScrollIndicator = false
+        scroll.addSubview(stack)
+        view.addSubview(scroll)
+
+        let centring = stack.centerYAnchor.constraint(equalTo: scroll.centerYAnchor)
+        centring.priority = .defaultLow   // yields when content is taller
+
+        // Cap the width so the sheet doesn't stretch across an iPad.
+        let maxWidth = stack.widthAnchor.constraint(lessThanOrEqualToConstant: 420)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
-            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            scroll.topAnchor.constraint(equalTo: view.topAnchor),
+            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            hero.widthAnchor.constraint(equalToConstant: heroSide),
-            hero.heightAnchor.constraint(equalToConstant: heroSide),
+            stack.topAnchor.constraint(greaterThanOrEqualTo:
+                scroll.contentLayoutGuide.topAnchor, constant: 28),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo:
+                scroll.contentLayoutGuide.bottomAnchor, constant: -28),
+            stack.centerXAnchor.constraint(equalTo: scroll.contentLayoutGuide.centerXAnchor),
+            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor,
+                                         constant: -56),
+            stack.heightAnchor.constraint(equalTo: scroll.contentLayoutGuide.heightAnchor,
+                                          constant: -56),
+            centring, maxWidth,
+
+            heroShadow.widthAnchor.constraint(equalToConstant: heroW),
+            heroShadow.heightAnchor.constraint(equalToConstant: heroH),
+            hero.topAnchor.constraint(equalTo: heroShadow.topAnchor),
+            hero.leadingAnchor.constraint(equalTo: heroShadow.leadingAnchor),
+            hero.trailingAnchor.constraint(equalTo: heroShadow.trailingAnchor),
+            hero.bottomAnchor.constraint(equalTo: heroShadow.bottomAnchor),
 
             buyButton.heightAnchor.constraint(equalToConstant: 56),
             buyButton.leadingAnchor.constraint(equalTo: stack.leadingAnchor),
@@ -330,6 +363,20 @@ final class PaywallViewController: UIViewController {
             blurb.widthAnchor.constraint(equalTo: stack.widthAnchor),
             note.widthAnchor.constraint(equalTo: stack.widthAnchor),
         ])
+    }
+
+    /// Radial glow holds CGColors, so re-resolve it when the style flips.
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previous) {
+            applyGlowColors()
+        }
+    }
+
+    private func applyGlowColors() {
+        let strength = traitCollection.userInterfaceStyle == .dark ? 0.55 : 0.22
+        glowLayer?.colors = [Brand.purple.withAlphaComponent(strength).cgColor,
+                             UIColor.clear.cgColor]
     }
 
     private var glowLayer: CAGradientLayer?
