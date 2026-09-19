@@ -89,9 +89,8 @@ final class StickerCell: UICollectionViewCell {
         onLockedTap = nil
     }
 
-    func configure(url: URL, name: String, locked: Bool) {
-        stickerView.sticker = try? MSSticker(contentsOfFileURL: url,
-                                             localizedDescription: name)
+    func configure(sticker: MSSticker?, name: String, locked: Bool) {
+        stickerView.sticker = sticker
         stickerView.startAnimating()
 
         touchCatcher.isHidden = !locked

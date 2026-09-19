@@ -1,4 +1,5 @@
 import Foundation
+import Messages
 import StoreKit
 import UIKit
 
@@ -21,19 +22,27 @@ final class StickerStore {
     /// Debug builds only: unlock everything without a purchase.
     /// Set to `false` to test the locked grid and paywall on device.
     /// This has no effect on Release — the check is compiled out entirely.
-    static let debugUnlockEverything = true
+    static let debugUnlockEverything = false
     #endif
 
     private(set) var stickerNames: [String] = []
     private(set) var product: Product? { didSet { onChange?() } }
-    private(set) var isUnlocked = false { didSet { onChange?() } }
     private(set) var isPurchasing = false { didSet { onChange?() } }
-    private(set) var loadFailed = false
+
+    /// Only notifies when the value actually changes; `didSet` fires on every
+    /// assignment, and a redundant reload during scrolling is visible jank.
+    private(set) var isUnlocked = false {
+        didSet { if oldValue != isUnlocked { onChange?() } }
+    }
 
     /// Fired whenever displayed state changes, so the UI can re-render.
     var onChange: (() -> Void)?
 
     private var updatesTask: Task<Void, Never>?
+
+    /// `MSSticker(contentsOfFileURL:)` touches the filesystem, so building one
+    /// per cell dequeue would do I/O throughout every scroll. Cached by name.
+    private var stickerCache: [String: MSSticker] = [:]
 
     init() {
         stickerNames = Self.discoverStickers()
@@ -48,7 +57,8 @@ final class StickerStore {
     static let assetsFolder = "StickerAssets"
 
     /// Sticker files ship as `s1.png` … `s103.png`. Sort numerically so the
-    /// free ones are the first six by number, not by string order.
+    /// free ones are the lowest-numbered, not the first in string order
+    /// (where "s10" would sort before "s2").
     private static func discoverStickers() -> [String] {
         let urls = Bundle.main.urls(forResourcesWithExtension: "png",
                                     subdirectory: assetsFolder) ?? []
@@ -75,6 +85,18 @@ final class StickerStore {
     func url(for name: String) -> URL? {
         Bundle.main.url(forResource: name, withExtension: "png",
                         subdirectory: Self.assetsFolder)
+    }
+
+    /// Cached sticker for the given name, or nil if the asset is missing or
+    /// rejected by Messages (over 500 KB, unsupported format).
+    func sticker(named name: String) -> MSSticker? {
+        if let cached = stickerCache[name] { return cached }
+        guard let url = url(for: name),
+              let sticker = try? MSSticker(contentsOfFileURL: url,
+                                           localizedDescription: name)
+        else { return nil }
+        stickerCache[name] = sticker
+        return sticker
     }
 
     var lockedCount: Int {
@@ -105,9 +127,8 @@ final class StickerStore {
         do {
             let products = try await Product.products(for: [Self.unlockProductID])
             product = products.first
-            loadFailed = products.isEmpty
         } catch {
-            loadFailed = true
+            product = nil
         }
     }
 
@@ -115,11 +136,10 @@ final class StickerStore {
     /// devices or reinstalls unlock without the customer tapping Restore.
     func refreshEntitlement() async {
         #if DEBUG
-        // Debug convenience: treat the pack as bought so the full catalogue
-        // is usable for review and screenshots without a real transaction.
-        // Flip `debugUnlockEverything` to false to exercise the locked and
-        // paywall flow. Compiled out of Release, so the shipping build
-        // always enforces the purchase.
+        // Debug convenience: set `debugUnlockEverything` to true to treat the
+        // pack as bought, for review and screenshots without a transaction.
+        // Compiled out of Release, so the shipping build always enforces
+        // the purchase.
         if Self.debugUnlockEverything {
             isUnlocked = true
             return

@@ -80,14 +80,14 @@ final class MessagesViewController: MSMessagesAppViewController {
     override func viewWillTransition(to size: CGSize,
                                      with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        coordinator.animate(alongsideTransition: { _ in
-            self.collectionView.collectionViewLayout.invalidateLayout()
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            self?.collectionView?.collectionViewLayout.invalidateLayout()
         })
     }
 
     override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
         super.didTransition(to: presentationStyle)
-        collectionView.collectionViewLayout.invalidateLayout()
+        collectionView?.collectionViewLayout.invalidateLayout()
         applyState()
         if pendingPaywall, presentationStyle == .expanded {
             pendingPaywall = false
@@ -96,6 +96,8 @@ final class MessagesViewController: MSMessagesAppViewController {
     }
 
     private func applyState() {
+        // Layout callbacks can arrive before viewDidLoad finishes wiring these.
+        guard collectionView != nil, bannerHeight != nil else { return }
         let unlocked = store.isUnlocked
         banner.isHidden = unlocked
         let barHeight = view.safeAreaInsets.top + UnlockBanner.rowHeight
@@ -204,9 +206,8 @@ extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDe
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: StickerCell.reuseID, for: indexPath) as! StickerCell
         let name = store.stickerNames[indexPath.item]
-        guard let url = store.url(for: name) else { return cell }
         let locked = store.isLocked(index: indexPath.item)
-        cell.configure(url: url, name: name, locked: locked)
+        cell.configure(sticker: store.sticker(named: name), name: name, locked: locked)
         if locked {
             cell.onLockedTap = { [weak self] in self?.presentPaywall() }
         }
