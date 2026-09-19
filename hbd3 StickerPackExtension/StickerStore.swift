@@ -17,6 +17,13 @@ final class StickerStore {
     /// Number of stickers playable without purchasing.
     static let freeCount = 4
 
+    #if DEBUG
+    /// Debug builds only: unlock everything without a purchase.
+    /// Set to `false` to test the locked grid and paywall on device.
+    /// This has no effect on Release — the check is compiled out entirely.
+    static let debugUnlockEverything = true
+    #endif
+
     private(set) var stickerNames: [String] = []
     private(set) var product: Product? { didSet { onChange?() } }
     private(set) var isUnlocked = false { didSet { onChange?() } }
@@ -107,13 +114,13 @@ final class StickerStore {
     /// Source of truth for access. Runs on launch so purchases made on other
     /// devices or reinstalls unlock without the customer tapping Restore.
     func refreshEntitlement() async {
-        #if DEBUG && targetEnvironment(simulator)
-        // Screenshot aid: the simulator has no real App Store account, so
-        // everything is unlocked there to allow full-catalogue captures.
-        // Set ForceLockedInSimulator to capture the locked/paywall state.
-        // Compiled out of Release and never active on a device, so it can't
-        // be used to bypass payment.
-        if !UserDefaults.standard.bool(forKey: "ForceLockedInSimulator") {
+        #if DEBUG
+        // Debug convenience: treat the pack as bought so the full catalogue
+        // is usable for review and screenshots without a real transaction.
+        // Flip `debugUnlockEverything` to false to exercise the locked and
+        // paywall flow. Compiled out of Release, so the shipping build
+        // always enforces the purchase.
+        if Self.debugUnlockEverything {
             isUnlocked = true
             return
         }
