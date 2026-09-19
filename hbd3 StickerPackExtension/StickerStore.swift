@@ -18,6 +18,16 @@ final class StickerStore {
     /// Number of stickers playable without purchasing.
     static let freeCount = 4
 
+    /// First build shipped under the free + In-App Purchase model.
+    ///
+    /// Version 1.0 was a paid app and shipped as build 1. Anyone whose
+    /// original download predates this build paid for the app outright, so
+    /// they keep the whole pack — see `isLegacyPaidCustomer()`.
+    ///
+    /// If the build number that actually reaches the App Store changes, this
+    /// must change with it, or genuine customers will be asked to pay twice.
+    static let firstFreeBuild = 5
+
     #if DEBUG
     /// Debug builds only: unlock everything without a purchase.
     /// Set to `false` to test the locked grid and paywall on device.
@@ -48,6 +58,9 @@ final class StickerStore {
     /// per cell dequeue would do I/O throughout every scroll. Cached by name.
     private var stickerCache: [String: MSSticker] = [:]
     private var promoCache: [String: UIImage] = [:]
+
+    /// Cached so the App Store transaction is only fetched once per session.
+    private var legacyPaidCustomer: Bool?
 
     init() {
         stickerNames = Self.discoverStickers()
@@ -197,7 +210,47 @@ final class StickerStore {
                 return
             }
         }
+
+        // No unlock purchase — but they may have bought the app back when it
+        // was paid, in which case the whole pack is already theirs.
+        if await isLegacyPaidCustomer() {
+            isUnlocked = true
+            return
+        }
+
         isUnlocked = false
+    }
+
+    /// Whether this customer bought the app back when it cost money.
+    ///
+    /// Switching from paid to free + IAP would otherwise lock 99 stickers
+    /// behind a purchase for people who already paid for all of them.
+    /// `AppTransaction.originalAppVersion` reports the CFBundleVersion of the
+    /// build they first downloaded, which lets us tell them apart from
+    /// customers who arrived after the app became free.
+    ///
+    /// Requires iOS 16; on iOS 15 there is no equivalent API, so those
+    /// customers fall through to the normal entitlement check.
+    private func isLegacyPaidCustomer() async -> Bool {
+        if let cached = legacyPaidCustomer { return cached }
+        guard #available(iOS 16.0, *) else { return false }
+
+        do {
+            guard case .verified(let appTransaction) = try await AppTransaction.shared else {
+                return false
+            }
+            // Sandbox and TestFlight can report "1.0" rather than a bare
+            // build number, so take the leading integer.
+            let leading = appTransaction.originalAppVersion.prefix { $0.isNumber }
+            guard let originalBuild = Int(leading) else { return false }
+            let isLegacy = originalBuild < Self.firstFreeBuild
+            legacyPaidCustomer = isLegacy
+            return isLegacy
+        } catch {
+            // Don't cache: a network failure here shouldn't permanently
+            // decide that a paying customer isn't one.
+            return false
+        }
     }
 
     private func apply(_ transaction: Transaction) async {
