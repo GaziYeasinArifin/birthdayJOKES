@@ -16,6 +16,8 @@
 		A1B2C30000000000000009 /* StickerAssets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000008 /* StickerAssets */; };
 		A1B2C3000000000000000D /* UnlockUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3000000000000000C /* UnlockUI.swift */; };
 		A1B2C3000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3000000000000000E /* Assets.xcassets */; };
+		A1B2C30000000000000011 /* PromoCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000010 /* PromoCatalog.swift */; };
+		A1B2C30000000000000013 /* PromoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C30000000000000012 /* PromoViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,8 @@
 		A1B2C3000000000000000B /* Birthday.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Birthday.storekit; sourceTree = "<group>"; };
 		A1B2C3000000000000000C /* UnlockUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UnlockUI.swift; path = "hbd3 StickerPackExtension/UnlockUI.swift"; sourceTree = "<group>"; };
 		A1B2C3000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = hbd3/Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C30000000000000010 /* PromoCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PromoCatalog.swift; path = "hbd3 StickerPackExtension/PromoCatalog.swift"; sourceTree = "<group>"; };
+		A1B2C30000000000000012 /* PromoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PromoViews.swift; path = "hbd3 StickerPackExtension/PromoViews.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -84,6 +88,8 @@
 				A1B2C30000000000000004 /* StickerStore.swift */,
 				A1B2C30000000000000006 /* StickerCell.swift */,
 				A1B2C3000000000000000C /* UnlockUI.swift */,
+				A1B2C30000000000000012 /* PromoViews.swift */,
+				A1B2C30000000000000010 /* PromoCatalog.swift */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -190,6 +196,8 @@
 				A1B2C30000000000000005 /* StickerStore.swift in Sources */,
 				A1B2C30000000000000007 /* StickerCell.swift in Sources */,
 				A1B2C3000000000000000D /* UnlockUI.swift in Sources */,
+				A1B2C30000000000000013 /* PromoViews.swift in Sources */,
+				A1B2C30000000000000011 /* PromoCatalog.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,7 +334,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
@@ -346,7 +354,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hbd3 StickerPackExtension/Info.plist";
@@ -366,7 +374,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;
@@ -384,7 +392,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = FT9JCH726G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hbd3/Info.plist;

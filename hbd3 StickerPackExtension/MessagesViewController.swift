@@ -15,6 +15,10 @@ final class MessagesViewController: MSMessagesAppViewController {
     private weak var paywall: PaywallViewController?
     private var pendingPaywall = false
 
+    /// Section 0 is the sticker grid; section 1 promotes our other apps.
+    private enum Section: Int, CaseIterable { case stickers, promos }
+    private let promos = PromoCatalog.packs
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
@@ -60,6 +64,11 @@ final class MessagesViewController: MSMessagesAppViewController {
         collectionView.delegate = self
         collectionView.register(StickerCell.self,
                                 forCellWithReuseIdentifier: StickerCell.reuseID)
+        collectionView.register(PromoRowCell.self,
+                                forCellWithReuseIdentifier: PromoRowCell.reuseID)
+        collectionView.register(MarqueeRibbonView.self,
+                                forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+                                withReuseIdentifier: MarqueeRibbonView.reuseID)
         view.insertSubview(collectionView, belowSubview: banner)
 
         NSLayoutConstraint.activate([
@@ -183,6 +192,36 @@ final class MessagesViewController: MSMessagesAppViewController {
         }
     }
 
+    // MARK: - Cross-promotion
+
+    /// Opens another of our apps on the App Store.
+    ///
+    /// `extensionContext.open(_:)` is not an option: an iMessage extension may
+    /// only use it to open its own parent app, and ours has no Home Screen
+    /// icon. `SKStoreProductViewController` renders the product page in-process
+    /// with a working Get button.
+    private func promote(_ pack: PromoPack) {
+        guard let itemID = Int(pack.appStoreID) else { return }
+
+        // The product page needs room; the compact browser is far too short.
+        if presentationStyle == .compact { requestPresentationStyle(.expanded) }
+
+        let storeController = SKStoreProductViewController()
+        storeController.delegate = self
+        let parameters = [SKStoreProductParameterITunesItemIdentifier: NSNumber(value: itemID)]
+
+        // Load before presenting, so the sheet never appears empty.
+        storeController.loadProduct(withParameters: parameters) { [weak self] loaded, error in
+            guard let self else { return }
+            guard loaded, error == nil else {
+                self.notify("Couldn’t Open the App Store",
+                            "\(pack.name) couldn’t be loaded. Check your connection and try again.")
+                return
+            }
+            (self.presentedViewController ?? self).present(storeController, animated: true)
+        }
+    }
+
     /// Alerts must come from whatever is frontmost, or they never appear.
     private func notify(_ title: String, _ message: String) {
         let ac = UIAlertController(title: title, message: message,
@@ -196,13 +235,25 @@ final class MessagesViewController: MSMessagesAppViewController {
 
 extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        Section.allCases.count
+    }
+
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        store.stickerNames.count
+        Section(rawValue: section) == .promos ? promos.count : store.stickerNames.count
     }
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if Section(rawValue: indexPath.section) == .promos {
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: PromoRowCell.reuseID, for: indexPath) as! PromoRowCell
+            let pack = promos[indexPath.item]
+            cell.configure(pack, image: store.promoImage(named: pack.artworkName))
+            return cell
+        }
+
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: StickerCell.reuseID, for: indexPath) as! StickerCell
         let name = store.stickerNames[indexPath.item]
@@ -218,6 +269,10 @@ extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDe
     /// screens (iPad, landscape) add columns rather than inflating the cells.
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
+        if Section(rawValue: indexPath.section) == .promos {
+            return CGSize(width: collectionView.bounds.width - 24,
+                          height: PromoRowCell.height)
+        }
         let insets: CGFloat = 12 * 2
         let gap: CGFloat = 8
         let available = collectionView.bounds.width - insets
@@ -227,5 +282,36 @@ extension MessagesViewController: UICollectionViewDataSource, UICollectionViewDe
         let columns = max(2, min(6, Int((available + gap) / (targetCell + gap))))
         let width = (available - gap * CGFloat(columns - 1)) / CGFloat(columns)
         return CGSize(width: floor(width), height: floor(width))
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        referenceSizeForHeaderInSection section: Int) -> CGSize {
+        guard Section(rawValue: section) == .promos else { return .zero }
+        return CGSize(width: collectionView.bounds.width, height: MarqueeRibbonView.height)
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        viewForSupplementaryElementOfKind kind: String,
+                        at indexPath: IndexPath) -> UICollectionReusableView {
+        let view = collectionView.dequeueReusableSupplementaryView(
+            ofKind: kind, withReuseIdentifier: MarqueeRibbonView.reuseID,
+            for: indexPath) as! MarqueeRibbonView
+        view.configure(title: "More iMessage stickers from us")
+        return view
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        didSelectItemAt indexPath: IndexPath) {
+        guard Section(rawValue: indexPath.section) == .promos else { return }
+        collectionView.deselectItem(at: indexPath, animated: true)
+        promote(promos[indexPath.item])
+    }
+}
+
+// MARK: - SKStoreProductViewControllerDelegate
+
+extension MessagesViewController: SKStoreProductViewControllerDelegate {
+    func productViewControllerDidFinish(_ viewController: SKStoreProductViewController) {
+        viewController.dismiss(animated: true)
     }
 }

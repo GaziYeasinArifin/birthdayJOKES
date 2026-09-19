@@ -43,6 +43,7 @@ final class StickerStore {
     /// `MSSticker(contentsOfFileURL:)` touches the filesystem, so building one
     /// per cell dequeue would do I/O throughout every scroll. Cached by name.
     private var stickerCache: [String: MSSticker] = [:]
+    private var promoCache: [String: UIImage] = [:]
 
     init() {
         stickerNames = Self.discoverStickers()
@@ -80,6 +81,17 @@ final class StickerStore {
                                         subdirectory: Self.assetsFolder)
         else { return nil }
         return UIImage(contentsOfFile: url.path)
+    }
+
+    /// Icon artwork for a cross-promoted app, cached alongside the stickers.
+    func promoImage(named name: String) -> UIImage? {
+        if let cached = promoCache[name] { return cached }
+        guard let url = Bundle.main.url(forResource: name, withExtension: "png",
+                                        subdirectory: Self.assetsFolder),
+              let image = UIImage(contentsOfFile: url.path)
+        else { return nil }
+        promoCache[name] = image
+        return image
     }
 
     func url(for name: String) -> URL? {
