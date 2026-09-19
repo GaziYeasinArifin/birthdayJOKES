@@ -107,6 +107,18 @@ final class StickerStore {
     /// Source of truth for access. Runs on launch so purchases made on other
     /// devices or reinstalls unlock without the customer tapping Restore.
     func refreshEntitlement() async {
+        #if DEBUG && targetEnvironment(simulator)
+        // Screenshot aid: the simulator has no real App Store account, so
+        // everything is unlocked there to allow full-catalogue captures.
+        // Set ForceLockedInSimulator to capture the locked/paywall state.
+        // Compiled out of Release and never active on a device, so it can't
+        // be used to bypass payment.
+        if !UserDefaults.standard.bool(forKey: "ForceLockedInSimulator") {
+            isUnlocked = true
+            return
+        }
+        #endif
+
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result,
                transaction.productID == Self.unlockProductID,
