@@ -114,7 +114,7 @@ final class MessagesViewController: MSMessagesAppViewController {
         if !unlocked {
             banner.update(price: store.displayPrice,
                           purchasing: store.isPurchasing,
-                          enabled: store.product != nil)
+                          loading: store.isLoadingProduct)
         }
         // The grid scrolls underneath the translucent bar, so inset it rather
         // than pinning below — that's what makes the blur read as a blend.
@@ -128,6 +128,11 @@ final class MessagesViewController: MSMessagesAppViewController {
         if unlocked, let paywall {
             paywall.dismiss(animated: true)
             self.paywall = nil
+        } else {
+            paywall?.apply(price: store.displayPrice,
+                           purchasing: store.isPurchasing,
+                           canBuy: store.product != nil,
+                           loading: store.isLoadingProduct)
         }
     }
 
@@ -155,9 +160,15 @@ final class MessagesViewController: MSMessagesAppViewController {
                                        price: store.displayPrice,
                                        purchasing: store.isPurchasing,
                                        canBuy: store.product != nil,
+                                       loading: store.isLoadingProduct,
                                        heroImage: store.appIconHero())
         vc.onBuy = { [weak self] in Task { await self?.runPurchase() } }
         vc.onRestore = { [weak self] in Task { await self?.runRestore() } }
+        // Retry the lookup on open, so a failed launch-time fetch doesn't
+        // leave the purchase permanently unreachable.
+        vc.onAppear = { [weak self] in
+            Task { await self?.store.reloadProductIfNeeded() }
+        }
         vc.modalPresentationStyle = .overFullScreen
         vc.modalTransitionStyle = .coverVertical
         paywall = vc
@@ -169,6 +180,11 @@ final class MessagesViewController: MSMessagesAppViewController {
     }
 
     private func runPurchase() async {
+        // The customer tapped Buy before the product arrived; fetch it now
+        // rather than failing outright.
+        if store.product == nil {
+            await store.reloadProductIfNeeded()
+        }
         switch await store.purchase(in: paywall ?? self) {
         case .unlocked:
             applyState()

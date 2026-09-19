@@ -29,6 +29,10 @@ final class StickerStore {
     private(set) var product: Product? { didSet { onChange?() } }
     private(set) var isPurchasing = false { didSet { onChange?() } }
 
+    /// True while a product lookup is in flight, so the UI can say "Loading…"
+    /// rather than showing a dead control.
+    private(set) var isLoadingProduct = false { didSet { onChange?() } }
+
     /// Only notifies when the value actually changes; `didSet` fires on every
     /// assignment, and a redundant reload during scrolling is visible jank.
     private(set) var isUnlocked = false {
@@ -135,13 +139,40 @@ final class StickerStore {
         await refreshEntitlement()
     }
 
-    private func loadProduct() async {
-        do {
-            let products = try await Product.products(for: [Self.unlockProductID])
-            product = products.first
-        } catch {
-            product = nil
+    /// Called when the paywall opens, so a purchase is still possible even if
+    /// the launch-time lookup failed.
+    func reloadProductIfNeeded() async {
+        guard product == nil, !isLoadingProduct else { return }
+        await loadProduct()
+    }
+
+    /// Fetches the product, retrying a few times with backoff.
+    ///
+    /// A single attempt is not enough: StoreKit can fail transiently on a cold
+    /// launch or a slow network, and with no retry the unlock stays
+    /// unreachable for the whole session — which reads to the customer, and to
+    /// App Review, as the purchase simply not existing.
+    @discardableResult
+    func loadProduct(retries: Int = 3) async -> Bool {
+        guard !isLoadingProduct else { return product != nil }
+        isLoadingProduct = true
+        defer { isLoadingProduct = false }
+
+        for attempt in 0...retries {
+            do {
+                let products = try await Product.products(for: [Self.unlockProductID])
+                if let first = products.first {
+                    product = first
+                    return true
+                }
+            } catch {
+                // Fall through to the backoff below and try again.
+            }
+            guard attempt < retries else { break }
+            let delay = UInt64(500_000_000 << attempt)   // 0.5s, 1s, 2s
+            try? await Task.sleep(nanoseconds: delay)
         }
+        return product != nil
     }
 
     /// Source of truth for access. Runs on launch so purchases made on other

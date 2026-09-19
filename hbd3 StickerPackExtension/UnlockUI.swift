@@ -175,15 +175,21 @@ final class UnlockBanner: UIView {
         CATransaction.commit()
     }
 
-    func update(price: String?, purchasing: Bool, enabled: Bool) {
+    func update(price: String?, purchasing: Bool, loading: Bool) {
         if purchasing {
             unlockButton.setTitle("…", for: .normal)
         } else if let price {
             unlockButton.setTitle("Get \(price)", for: .normal)
+        } else if loading {
+            unlockButton.setTitle("Loading…", for: .normal)
         } else {
             unlockButton.setTitle("Get", for: .normal)
         }
-        unlockButton.isEnabled = enabled && !purchasing
+        // Deliberately stays tappable even without a price. Disabling it when
+        // the product hasn't loaded makes the purchase look absent — which is
+        // exactly how App Review read it. Tapping always opens the paywall,
+        // which retries the lookup.
+        unlockButton.isEnabled = !purchasing
     }
 }
 
@@ -192,9 +198,10 @@ final class PaywallViewController: UIViewController {
 
     private let total: Int
     private let locked: Int
-    private let price: String?
-    private let purchasing: Bool
-    private let canBuy: Bool
+    private var price: String?
+    private var purchasing: Bool
+    private var canBuy: Bool
+    private var loading: Bool
     private let heroImage: UIImage?
 
     var onBuy: (() -> Void)?
@@ -203,15 +210,45 @@ final class PaywallViewController: UIViewController {
     private let buyButton = PillButton(fill: Brand.yellow, title: Brand.ink,
                                        size: 18, weight: .heavy)
 
+    /// Fired when the sheet appears, so the owner can retry a failed product
+    /// lookup rather than leaving the customer with an inert button.
+    var onAppear: (() -> Void)?
+
+    private let noteLabel = UILabel()
+
     init(total: Int, locked: Int, price: String?, purchasing: Bool,
-         canBuy: Bool, heroImage: UIImage?) {
+         canBuy: Bool, loading: Bool, heroImage: UIImage?) {
         self.total = total
         self.locked = locked
         self.price = price
         self.purchasing = purchasing
         self.canBuy = canBuy
+        self.loading = loading
         self.heroImage = heroImage
         super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        onAppear?()
+    }
+
+    /// Refreshes price and button state while the sheet is open.
+    func apply(price: String?, purchasing: Bool, canBuy: Bool, loading: Bool) {
+        self.price = price
+        self.purchasing = purchasing
+        self.canBuy = canBuy
+        self.loading = loading
+        guard isViewLoaded else { return }
+        buyButton.setTitle(buyTitle(), for: .normal)
+        buyButton.isEnabled = canBuy && !purchasing
+        noteLabel.text = noteText()
+    }
+
+    private func noteText() -> String {
+        if canBuy { return "One-time purchase · Restores on all your devices" }
+        if loading { return "Contacting the App Store…" }
+        return "The App Store isn’t reachable right now. Pull down to close and try again."
     }
 
     @available(*, unavailable)
@@ -286,9 +323,8 @@ final class PaywallViewController: UIViewController {
         buyButton.isEnabled = canBuy && !purchasing
         buyButton.addTarget(self, action: #selector(buyTapped), for: .touchUpInside)
 
-        let note = UILabel()
-        note.text = canBuy ? "One-time purchase · Restores on all your devices"
-                           : "The store isn’t reachable right now."
+        let note = noteLabel
+        note.text = noteText()
         note.font = .systemFont(ofSize: 11, weight: .medium)
         note.textColor = .tertiaryLabel
         note.textAlignment = .center
@@ -392,6 +428,7 @@ final class PaywallViewController: UIViewController {
     private func buyTitle() -> String {
         if purchasing { return "Purchasing…" }
         if let price { return "Get \(price)" }
+        if loading { return "Loading…" }
         return "Unlock Everything"
     }
 
